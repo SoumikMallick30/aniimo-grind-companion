@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Production-first Aniimo Homeland layouts, starting with a verified RV8 demonstration.">
+  <title>Aniimo Grind Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Aniimo Grind Companion home"><span class="brand-mark">A</span><span>ANIIMO / GRIND</span></a>
+    <div class="top-status"><span class="pulse"></span> DATASET <strong>0.1</strong></div>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap">
+      <div class="eyebrow">PRODUCTION ZONE · MVP</div>
+      <h1>Build less.<br><em>Produce more.</em></h1>
+      <p class="lede">A focused layout companion for Aniimo Homeland production. Choose your RV, switch decoration density, and keep every zone readable.</p>
+      <div class="hero-meta"><span>RV 01—20</span><span>ENGLISH UI</span><span>ALL LEVELS LIVE</span></div>
+    </section>
+
+    <section class="control-shell wrap" aria-label="Layout controls">
+      <div class="control-head"><span>01 / CONFIGURE</span><span class="confidence community">COMMUNITY MAX · RV20</span></div>
+      <div class="controls">
+        <label class="rv-control"><span>RV LEVEL</span><strong id="rvReadout">08</strong><input id="rvRange" type="range" min="1" max="20" value="8" aria-label="RV level"><div class="range-labels"><span>01</span><span>20</span></div></label>
+        <fieldset><legend>LAYOUT MODE</legend><div class="segmented"><button class="mode active" data-mode="bare">NO DECOR</button><button class="mode" data-mode="decorated">WITH DECOR</button></div></fieldset>
+        <div class="priority"><span>OPTIMIZATION</span><strong>PRODUCTION FIRST</strong><small>Short routes · clear zones · no invented output math</small></div>
+      </div>
+    </section>
+
+    <section class="workspace wrap">
+      <div class="section-title"><span>02 / LAYOUT</span><h2 id="layoutTitle">RV8 · No Decoration</h2><div id="dataBadge" class="confidence verified">VERIFIED CORE</div></div>
+      <div id="pending" class="pending" hidden><span>DATA PENDING</span><h3 id="pendingTitle">RV7 is ready for verified data.</h3><p>This level remains selectable by design, but layout counts are not guessed. Add a verified record to the JSON schema to activate it.</p><button id="returnRv8">VIEW RV8 DEMO</button></div>
+      <div id="layoutContent">
+        <div class="layout-grid">
+          <article class="map-card">
+            <div class="map-toolbar"><span>ZONE MAP / CONCEPT</span><span>NOT TILE-EXACT</span></div>
+            <div id="zoneMap" class="zone-map bare" role="img" aria-label="Conceptual RV8 production zone map">
+              <div class="zone z-farm"><b>FARMLAND</b><span id="mapFarm">16 plots</span><i>01</i></div>
+              <div class="zone z-wood"><b>WOODLAND</b><span id="mapWood">8 plots</span><i>02</i></div>
+              <div class="zone z-production"><b>PRODUCTION</b><span>Compact line</span><i>03</i></div>
+              <div class="zone z-mine"><b>MINES</b><span id="mapMine">4 plots</span><i>04</i></div>
+              <div class="zone z-utility"><b>UTILITIES</b><span>Central access</span><i>05</i></div>
+              <div class="route route-a"></div><div class="route route-b"></div>
+            </div>
+          </article>
+          <aside class="stats-card">
+            <div class="stat"><span>FARMLAND</span><strong id="farmCount">16</strong><small id="farmConfidence">verified count</small></div>
+            <div class="stat"><span>WOODLAND</span><strong id="woodCount">08</strong><small id="woodConfidence">verified count</small></div>
+            <div class="stat"><span>MINES</span><strong id="mineCount">04</strong><small id="mineConfidence">verified count</small></div>
+            <div class="stat dim"><span>FACILITIES</span><strong>—</strong><small>awaiting in-game list</small></div>
+            <div class="score"><span>LAYOUT INTENT</span><div><b>Dense production</b><i>Short hauling loop</i></div><div><b id="decorScore">0% decor reserve</b><i>Mode setting</i></div></div>
+          </aside>
+        </div>
+        <div class="notes-grid">
+          <article><span>01</span><h3>Group repeat work</h3><p>Keep farmland and woodland in clean blocks so planting, watering, and collection routes stay legible.</p></article>
+          <article><span>02</span><h3>Centralize handoff</h3><p>Place storage and confirmed utilities near the production line. Exact facility counts remain unlisted until verified.</p></article>
+          <article><span>03</span><h3 id="modeNoteTitle">Protect every tile</h3><p id="modeNote">The no-decoration variant reserves the full concept map for functional placement and access lanes.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="reference wrap">
+      <div class="section-title"><span>03 / REFERENCE</span><h2>Your RV8, not a stock farm.</h2></div>
+      <figure><img src="assets/rv8-reference.png" alt="User-provided Aniimo RV8 screenshot showing fenced production plots in build mode"><figcaption><span>IN-GAME CAPTURE · RV8</span><p>This screenshot anchors the app’s visual language: the elevated build view, pale placement grid, green terrain, and fenced production blocks.</p></figcaption></figure>
+    </section>
+
+    <section class="data-section wrap">
+      <div><span class="eyebrow">04 / DATA</span><h2>Future updates,<br>without rewrites.</h2></div>
+      <div class="schema"><div class="schema-head"><span>game-data.json</span><span>EDITABLE</span></div><pre><code>{
+  "rvLevel": <b>8</b>,
+  "verification": <em>"verified"</em>,
+  "zones": {
+    "farmland": <b>16</b>,
+    "woodland": <b>8</b>,
+    "mines": <b>4</b>,
+    "production": <span>null</span>,
+    "utilities": <span>null</span>
+  }
+}</code></pre><p>Unknown means <code>null</code>. The interface never turns missing data into fake mechanics.</p></div>
+    </section>
+  </main>
+
+  <footer class="wrap"><span>ANIIMO GRIND COMPANION</span><span>FAN-MADE · NOT AFFILIATED</span><span>DATA CHECKED 2026.10.10</span></footer>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
+
