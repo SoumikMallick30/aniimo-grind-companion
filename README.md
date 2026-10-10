@@ -13,7 +13,7 @@ A production-first optimizer and calculated Homeland layout planner for **Aniimo
 - Ability level, personality, and job assignments
 - Facility-by-facility production instructions
 - Crop, seed, profit, opportunity, and goal breakdowns
-- Calculated top-down Homeland layout around the Storage Unit
+- Calculated top-down Homeland layout using the player's actual unlocked plot count and one or more unlocked Storage Units
 - Environment coverage and optional production simulation
 - English-first responsive interface with user-supplied production-zone references
 

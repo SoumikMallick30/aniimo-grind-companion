@@ -363,6 +363,7 @@ function getPersistedFieldIds() {
         'target-amount', 'current-amount',
         'strategy-level-up', 'strategy-priorities', 'level-up-target',
         'mode-simple', 'mode-advanced', 'home-level',
+        'storage-count', 'open-plot-count',
         'ecological-module-level', 'kitchen-module-level',
         'resource-detector-level', 'crafting-module-level',
         'rate-unit', 'season-on', 'layout-sim-on', 'season-currency-per-day',
@@ -566,6 +567,25 @@ function isSimpleMode() {
 
 function selectedHomeLevel() {
     return numberOrDefault(document.getElementById('home-level').value, MAX_HOME_LEVEL);
+}
+
+let plotCountWasEdited = false;
+
+function selectedOpenPlotCount() {
+    return Math.max(1, Math.min(homelandPlots().length,
+        Math.round(numberOrDefault(document.getElementById('open-plot-count').value, selectedHomeLevel()))));
+}
+
+function selectedStorageCount() {
+    return Math.max(1, Math.min(selectedOpenPlotCount(),
+        Math.round(numberOrDefault(document.getElementById('storage-count').value, 1))));
+}
+
+function syncLayoutSpaceWithRv() {
+    if (!plotCountWasEdited) document.getElementById('open-plot-count').value = String(selectedHomeLevel());
+    document.getElementById('layout-space-note').textContent = plotCountWasEdited
+        ? 'Using your unlocked plot count (not an assumed RV default).'
+        : 'Plot count follows your selected RV until you change it.';
 }
 
 function populateHomeLevels() {
@@ -1218,11 +1238,16 @@ function attachLayoutHandlers() {
     document.getElementById('layout-replay').addEventListener('click', () => {
         if (layoutSim) resetLayoutSim(layoutSim);
     });
+    document.getElementById('open-plot-count').addEventListener('input', () => {
+        plotCountWasEdited = true;
+        syncLayoutSpaceWithRv();
+    });
+    document.getElementById('home-level').addEventListener('change', syncLayoutSpaceWithRv);
 }
 
 function drawLayout(drawn) {
     const diagram = document.getElementById('layout-diagram');
-    diagram.innerHTML = homelandSvg(drawn.layout, drawn.homeLevel);
+    diagram.innerHTML = homelandSvg(drawn.layout, drawn.openPlotCount);
     // With the simulation off, the layout is drawn on its own.
     const on = document.getElementById('layout-sim-on').checked;
     diagram.classList.toggle('no-sim', !on);
@@ -1246,7 +1271,9 @@ function renderHomelandLayout(plan) {
     // Worked out in a worker of its own: a large homeland takes a few seconds.
     const { pieces, unplaced } = homelandPieces(plan, lastPlanInput);
     const homeLevel = layoutHomeLevel();
-    const cells = homelandPlots().filter(p => p.number <= homeLevel);
+    const openPlotCount = selectedOpenPlotCount();
+    const storageCount = selectedStorageCount();
+    const cells = homelandPlots().filter(p => p.number <= openPlotCount);
     if (layoutWorker) layoutWorker.terminate();
     layoutWorker = new Worker(WORKER_URL.replace('worker.js', 'layout-worker.js'), { type: 'module' });
     layoutWorker.onmessage = (event) => {
@@ -1254,23 +1281,23 @@ function renderHomelandLayout(plan) {
         layoutWorker = null;
         if (runId !== layoutRunId) return;
         const layout = event.data;
-        const at = layout.storageAt;
+        const storageAts = layout.storageAts || [layout.storageAt];
         // Buildings carry nothing themselves.
         const members = layout.pieces.flatMap(p => p.members).map(m => ({ ...m, weight: m.weight || 0 }));
         const trips = members.reduce((sum, m) => sum + m.weight, 0);
-        const walked = members.reduce((sum, m) => sum + m.weight * Math.hypot(m.x + m.w / 2 - at.x, m.y + m.h / 2 - at.y), 0);
+        const walked = members.reduce((sum, m) => sum + m.weight * Math.min(...storageAts.map(at => Math.hypot(m.x + m.w / 2 - at.x, m.y + m.h / 2 - at.y))), 0);
         const noRoom = [...new Set(layout.unplaced.map(i => {
             const piece = pieces[i];
             return piece.cluster ? `${piece.buildings[0].facility} and its plots` : piece.members[0].facility;
         }))];
         const notes = [
-            noRoom.length ? `No room found in RV ${homeLevel}'s plots for: ${noRoom.join(', ')}.` : '',
+            noRoom.length ? `No room found in the ${openPlotCount} open plots for: ${noRoom.join(', ')}.` : '',
             unplaced.length ? `Not placed, size unknown: ${unplaced.join(', ')}.` : '',
         ].filter(Boolean).join(' ');
         document.getElementById('layout-summary').textContent = `${trips > 0
-            ? `${formatNumber(Math.round(trips))} trips/hour to the Storage Unit, ${(walked / trips).toFixed(1)} tiles each on average, in the ${cells.length} plot${cells.length === 1 ? '' : 's'} open at RV ${homeLevel}.`
-            : 'Nothing in this plan is carried to the Storage Unit.'}${notes ? ` ${notes}` : ''}`;
-        lastLayout = { layout, homeLevel };
+            ? `${formatNumber(Math.round(trips))} trips/hour to ${storageCount} Storage Unit${storageCount === 1 ? '' : 's'}, ${(walked / trips).toFixed(1)} tiles each on average, inside ${openPlotCount} open plot${openPlotCount === 1 ? '' : 's'}.`
+            : `Nothing in this plan is carried to the ${storageCount} Storage Unit${storageCount === 1 ? '' : 's'}.`}${notes ? ` ${notes}` : ''}`;
+        lastLayout = { layout, homeLevel, openPlotCount };
         drawLayout(lastLayout);
         setStep('layout', 'done');
     };
@@ -1281,7 +1308,7 @@ function renderHomelandLayout(plan) {
         document.getElementById('layout-summary').textContent = 'The layout couldn\'t be worked out.';
         setStep('layout', 'fail');
     };
-    layoutWorker.postMessage({ pieces, cells: cells.map(({ x, y, w, h }) => ({ x, y, w, h })) });
+    layoutWorker.postMessage({ pieces, cells: cells.map(({ x, y, w, h }) => ({ x, y, w, h })), storageCount });
 }
 
 // Stops a layout still being worked out, so it can't land over a newer plan.
@@ -1297,7 +1324,7 @@ function stopLayout() {
 let layoutShowsWhole = false;
 let lastLayout = null;
 
-function homelandSvg(layout, homeLevel) {
+function homelandSvg(layout, openPlotCount) {
     // Each environment building in use covers the 9x9 square around its center, drawn under
     // everything in its mode's color as on the building's own map.
     const coverage = layout.pieces.flatMap(p => p.members)
@@ -1306,18 +1333,19 @@ function homelandSvg(layout, homeLevel) {
     // The whole homeland, its plots marked out and the ones not open yet shaded.
     const plots = homelandPlots();
     // Zoomed to what's placed, a couple of tiles around it, unless the whole homeland is asked for.
-    const placed = [layout.storage, ...layout.pieces.flatMap(p => p.members)];
+    const storages = layout.storages || [layout.storage];
+    const placed = [...storages, ...layout.pieces.flatMap(p => p.members)];
     const whole = layoutShowsWhole;
     const minX = whole ? -1 : Math.floor(Math.min(...placed.map(r => r.x))) - 2;
     const minY = whole ? -1 : Math.floor(Math.min(...placed.map(r => r.y))) - 2;
     const maxX = whole ? Math.max(...plots.map(p => p.x + p.w)) + 1 : Math.ceil(Math.max(...placed.map(r => r.x + r.w))) + 2;
     const maxY = whole ? Math.max(...plots.map(p => p.y + p.h)) + 1 : Math.ceil(Math.max(...placed.map(r => r.y + r.h))) + 2;
     // Locked plots last, so where one meets an open plot, the edge between them reads red.
-    const plotShapes = [...plots].sort((a, b) => (b.number <= homeLevel) - (a.number <= homeLevel)).map(p => {
-        const open = p.number <= homeLevel;
+    const plotShapes = [...plots].sort((a, b) => (b.number <= openPlotCount) - (a.number <= openPlotCount)).map(p => {
+        const open = p.number <= openPlotCount;
         // An open plot is named by its number; one still to come by the RV level that opens it.
         return `<g class="layout-plot${open ? '' : ' locked'}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" />
-            <text x="${p.x + 0.6}" y="${p.y + 0.9}" font-size="0.9">${open ? 'Plot' : 'RV'} ${p.number}</text></g>`;
+            <text x="${p.x + 0.6}" y="${p.y + 0.9}" font-size="0.9">${open ? `Plot ${p.number}` : 'Locked'}</text></g>`;
     }).join('');
     const lines = [];
     for (let x = minX; x <= maxX; x++) lines.push(`<line x1="${x}" y1="${minY}" x2="${x}" y2="${maxY}" />`);
@@ -1325,7 +1353,7 @@ function homelandSvg(layout, homeLevel) {
     const maxTrips = Math.max(...layout.pieces.flatMap(p => p.members.map(m => m.weight || 0)), 1e-9);
     const shapes = layout.pieces.flatMap(p => p.members).map(m => {
         const color = layoutColor(m);
-        const away = Math.hypot(m.x + m.w / 2 - (layout.storage.x + layout.storage.w / 2), m.y + m.h / 2 - (layout.storage.y + layout.storage.h / 2));
+        const away = Math.min(...storages.map(s => Math.hypot(m.x + m.w / 2 - (s.x + s.w / 2), m.y + m.h / 2 - (s.y + s.h / 2))));
         const tip = tipAttrs(m.facility, {
             detail: m.jobs ? m.jobs.map(j => prettyItem(j.item)).join(', ') : m.crop ? prettyItem(m.crop) : m.building && m.mode ? m.mode : 'Idle',
             stats: m.weight > 0 ? `${formatRate(m.weight)} trips/hour · ${away.toFixed(1)} tiles from storage` : '',
@@ -1354,7 +1382,6 @@ function homelandSvg(layout, homeLevel) {
         return `<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="none"
             stroke="${tint}" stroke-opacity="0.8" stroke-dasharray="0.35,0.25" stroke-width="0.08" />`;
     }).join('');
-    const s = layout.storage;
     // A line from everything carried to the Storage Unit, each drawn once its first batch is in,
     // and a ring for the batch it's on (see "Deliveries"), in the same order as `layoutFlows`.
     const flowList = layoutFlows(layout);
@@ -1372,8 +1399,8 @@ function homelandSvg(layout, homeLevel) {
         <g class="layout-coverage-edges" pointer-events="none">${coverageEdges}</g>
         <g class="layout-rings" pointer-events="none">${rings}</g>
         <g class="layout-flows" pointer-events="none">${flows}<g class="layout-dots"></g></g>
-        <g class="layout-piece layout-storage-unit" ${tipAttrs('Storage Unit', { detail: 'Where everything is carried', stats: totalTrips > 0 ? `${formatRate(totalTrips)} trips/hour` : '' })}><rect x="${s.x + 0.04}" y="${s.y + 0.04}" width="${s.w - 0.08}" height="${s.h - 0.08}" rx="0.2" class="layout-storage" />
-        <text x="${s.x + s.w / 2}" y="${s.y + s.h / 2}" font-size="0.8" class="layout-storage-text">SU</text></g>
+        ${storages.map((s, i) => `<g class="layout-piece layout-storage-unit" ${tipAttrs(`Storage Unit ${i + 1}`, { detail: 'Facilities are assigned to their nearest unlocked Storage Unit', stats: totalTrips > 0 ? `${formatRate(totalTrips)} total trips/hour` : '' })}><rect x="${s.x + 0.04}" y="${s.y + 0.04}" width="${s.w - 0.08}" height="${s.h - 0.08}" rx="0.2" class="layout-storage" />
+        <text x="${s.x + s.w / 2}" y="${s.y + s.h / 2}" font-size="0.65" class="layout-storage-text">SU${i + 1}</text></g>`).join('')}
     </svg>`;
 }
 
@@ -1402,12 +1429,13 @@ let layoutSim = null;
 // long a batch takes and its pace in the plan (batches a second). Most pieces have one; a Bench
 // or Kiln unit has one per tier it takes turns on (see `homelandPieces`).
 function layoutFlows(layout) {
-    const s = layout.storage;
-    const x2 = s.x + s.w / 2;
-    const y2 = s.y + s.h / 2;
     return layout.pieces.flatMap(p => p.members).filter(m => m.weight > 0 && m.crop && m.cycle > 0).map(m => {
         const x1 = m.x + m.w / 2;
         const y1 = m.y + m.h / 2;
+        const storages = layout.storages || [layout.storage];
+        const s = storages.reduce((best, candidate) => Math.hypot(x1 - (candidate.x + candidate.w / 2), y1 - (candidate.y + candidate.h / 2)) < Math.hypot(x1 - (best.x + best.w / 2), y1 - (best.y + best.h / 2)) ? candidate : best);
+        const x2 = s.x + s.w / 2;
+        const y2 = s.y + s.h / 2;
         const ring = Math.min(0.45, Math.min(m.w, m.h) * 0.22);
         return {
             x1, y1, x2, y2, length: Math.hypot(x2 - x1, y2 - y1),
@@ -4200,6 +4228,8 @@ async function initApp() {
     populateHomeLevels();
     populateLevelUpTargets();
     loadInputsFromStorage(savedData);
+    plotCountWasEdited = !!savedData && Object.prototype.hasOwnProperty.call(savedData, 'open-plot-count');
+    syncLayoutSpaceWithRv();
     attachAutoSave();
     attachFacilityTierHandlers();
     attachModeHandlers();

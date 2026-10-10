@@ -282,6 +282,49 @@ export function layOutHomeland(pieces, cells, storage = { w: 2, h: 2 }) {
     };
 }
 
+// Splits unlocked plots into compact Storage Unit zones, balances facilities between them by
+// footprint, and runs the proven single-storage placer inside each non-overlapping zone.
+// One Storage Unit therefore behaves exactly as before; additional units genuinely shorten the
+// route used by the map instead of being decorative markers.
+export function layOutHomelandMulti(pieces, cells, requested = 1, storage = { w: 2, h: 2 }) {
+    const count = Math.max(1, Math.min(cells.length, Math.round(Number(requested)) || 1));
+    if (count === 1) {
+        const out = layOutHomeland(pieces, cells, storage);
+        return { ...out, storages: [out.storage], storageAts: [out.storageAt] };
+    }
+    const zones = Array.from({ length: count }, () => []);
+    cells.forEach((cell, i) => zones[Math.min(count - 1, Math.floor(i * count / cells.length))].push(cell));
+    const capacities = zones.map(zone => zone.reduce((sum, cell) => sum + cell.w * cell.h, 0));
+    const assignments = Array.from({ length: count }, () => []);
+    const loads = Array(count).fill(0);
+    const areaOf = piece => {
+        const source = piece.cluster ? [...piece.buildings, ...piece.plots] : piece.members;
+        return source.reduce((sum, member) => sum + member.w * member.h, 0);
+    };
+    pieces.map((piece, index) => ({ piece, index, area: areaOf(piece) }))
+        .sort((a, b) => b.area - a.area)
+        .forEach(entry => {
+            let zone = 0;
+            for (let i = 1; i < count; i++) if (loads[i] / capacities[i] < loads[zone] / capacities[zone]) zone = i;
+            assignments[zone].push(entry);
+            loads[zone] += entry.area;
+        });
+    const combined = new Array(pieces.length);
+    const unplaced = [];
+    const storages = [];
+    const storageAts = [];
+    let tried = 0;
+    assignments.forEach((entries, zone) => {
+        const out = layOutHomeland(entries.map(entry => entry.piece), zones[zone], storage);
+        tried += out.tried;
+        storages.push(out.storage);
+        storageAts.push(out.storageAt);
+        out.pieces.forEach((piece, localIndex) => { combined[entries[localIndex].index] = piece; });
+        out.unplaced.forEach(localIndex => unplaced.push(entries[localIndex].index));
+    });
+    return { storage: storages[0], storageAt: storageAts[0], storages, storageAts, pieces: combined, unplaced, tried };
+}
+
 // Puts `plots` on `slots` (the plan's own arrangement, one slot per plot, each slot sized for the
 // plot that had it): within each facility and zone, the busiest crop takes the slot nearest the
 // Storage Unit.

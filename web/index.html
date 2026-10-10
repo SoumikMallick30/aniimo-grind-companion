@@ -128,6 +128,22 @@
                     </div>
                 </div>
 
+                <div class="layout-space-config">
+                    <h3>Layout space</h3>
+                    <p class="hint">Use what is actually unlocked on your Homeland. The layout will stay inside these plots and arrange busy facilities around every Storage Unit.</p>
+                    <div class="input-row">
+                        <div class="input-field">
+                            <label for="storage-count">Storage Units unlocked</label>
+                            <input type="number" id="storage-count" value="1" min="1" max="20" step="1">
+                        </div>
+                        <div class="input-field">
+                            <label for="open-plot-count">Plots open</label>
+                            <input type="number" id="open-plot-count" value="20" min="1" max="20" step="1">
+                        </div>
+                    </div>
+                    <p id="layout-space-note" class="hint small">Plot count follows your selected RV until you change it.</p>
+                </div>
+
                 <div class="strategy">
                     <h3>Strategy</h3>
                     <div class="tabs" role="radiogroup" aria-label="Strategy">

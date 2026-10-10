@@ -5,6 +5,6 @@
 const ready = import('./layout.js' + new URL(import.meta.url).search);
 
 self.onmessage = async (event) => {
-    const { layOutHomeland } = await ready;
-    self.postMessage(layOutHomeland(event.data.pieces, event.data.cells));
+    const { layOutHomelandMulti } = await ready;
+    self.postMessage(layOutHomelandMulti(event.data.pieces, event.data.cells, event.data.storageCount));
 };
