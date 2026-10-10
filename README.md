@@ -1,82 +1,44 @@
 # Aniimo Grind Companion
 
-A production-first Homeland layout companion for **Aniimo**, built around the user's RV8 in-game screenshot rather than generic farm imagery.
+A production-first optimizer and calculated Homeland layout planner for **Aniimo**.
 
 **Live site:** https://soumikmallick30.github.io/aniimo-grind-companion/
 
-## MVP scope
+## What it does
 
-- English-only interface
-- Dynamic RV selector from RV1 through RV20
-- Functional RV1–RV20 selector with community-sourced progression counts
-- Decoration-free and decorated layout variants
-- Separate farmland, woodland, mines, production, and utilities zones
-- Per-RV assigned Aniimo count and available production capacity kept as separate fields
-- Dynamic Homeland ability priorities and the full facility personality map
-- Production-first scoring and practical zone notes
-- Editable JSON game-data schema
-- Mobile and desktop layouts
+- Simple setup from RV level or Advanced per-facility configuration
+- Level-up and ranked-priority strategies
+- Exact whole-facility production planning in the browser
+- Best, Minimum, and custom **My Aniimo** team planning
+- Ability level, personality, and job assignments
+- Facility-by-facility production instructions
+- Crop, seed, profit, opportunity, and goal breakdowns
+- Calculated top-down Homeland layout around the Storage Unit
+- Environment coverage and optional production simulation
+- English-first responsive interface with user-supplied production-zone references
 
-## Data confidence
+Unknown or not-yet-confirmed game data remains visibly marked. The tool is fan-made and is not affiliated with Aniimo or Kingsglory.
 
-This project does not invent game mechanics. Every record has a `verification` field:
+## Architecture
 
-- `verified`: supported by the supplied in-game screenshot or multiple current references
-- `community`: supported by current community references, but not an official Aniimo source
-- `unverified`: placeholder awaiting in-game confirmation
+- `src/` — Rust production model and WebAssembly bindings
+- `data/` — editable facility and recipe CSV data
+- `web/` — static frontend, Web Worker, layout renderer, and HiGHS solver
+- `tests/` — Rust and browser-module test suites
+- `.github/workflows/deploy-pages.yml` — reproducible WASM build and GitHub Pages deployment
 
-The current maximum is set to **RV20** with `community` confidence as of 2026-10-10. Progression counts are community-sourced; facility inventories and exact tile footprints remain `null` until verified in game.
-
-## Run locally
+## Test and build
 
 ```bash
-npm run build
-npm run dev
+node --test tests/*.test.mjs
+cargo test --locked
+wasm-pack build --target web --out-dir web/pkg
 ```
 
-Open `http://localhost:4173`.
+Serve the `web/` directory over HTTP after building the WebAssembly package.
 
-## Edit game data
+## License and attribution
 
-Update [`src/data/game-data.json`](src/data/game-data.json). The build copies the file to `dist/data/game-data.json`; the browser loads it at runtime, so adding future verified RV records does not require rewriting the UI.
+The optimizer engine and core game-data model are adapted from [Aniimax](https://github.com/ae-bii/aniimax), Copyright 2026-Present aebii, under the MIT License. The full license text is retained in [`LICENSE`](LICENSE).
 
-Required fields for a complete level:
-
-```json
-{
-  "rvLevel": 8,
-  "verification": "community",
-  "productionCrew": 18,
-  "productionCapacity": 24,
-  "workforceTier": "expanded",
-  "zones": {
-    "farmland": 18,
-    "woodland": 9,
-    "mines": 4,
-    "production": null,
-    "utilities": null
-  }
-}
-```
-
-Use `null` whenever a value is unknown. Do not guess.
-
-## Repository structure
-
-```text
-dist/                    Deployable static site
-src/data/game-data.json  Editable game-data source
-scripts/build.mjs        Reproducible static build
-scripts/check.mjs        Data and output validation
-```
-
-## Source notes
-
-- Visual reference: user-provided RV8 Aniimo build-mode screenshot
-- RV1–RV20 progression counts: community references cross-checked on 2026-10-10
-- RV8 visual reference and counts: user screenshot plus current progression references
-- RV8 production calculation and worker requirements: [Aniimax community optimizer](https://ae-bii.github.io/aniimax/) (community data, checked 2026-10-10)
-- Community maximum: RV20, checked 2026-10-10
-
-This is an independent fan-made planning tool and is not affiliated with Aniimo or Kingsglory.
-
+The Grind Companion interface, production-reference presentation, and layout usability additions are maintained in this repository.
