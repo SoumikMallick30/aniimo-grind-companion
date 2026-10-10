@@ -22,13 +22,18 @@
   letter-spacing: .1em;
 }
 
-.cap-card strong {
+.cap-card > strong,
+.crew-ratio > strong {
   display: block;
   font-size: 110px;
   letter-spacing: -.08em;
   line-height: 1;
   margin: 22px 0;
 }
+.crew-ratio { display: flex; align-items: baseline; gap: 12px; margin: 22px 0; }
+.crew-ratio > strong { margin: 0; }
+.crew-ratio i { font: 400 34px var(--mono); font-style: normal; opacity: .45; }
+.crew-ratio b { font: 700 36px var(--mono); }
 
 .cap-card p {
   font-size: 13px;
@@ -95,15 +100,59 @@
 .reference-pair figure { min-width: 0; }
 .reference-pair img { aspect-ratio: 16 / 9; }
 
+.blueprint { position: relative; overflow: hidden; min-height: 520px; background: #14251c; }
+.blueprint > img { display: block; width: 100%; height: 100%; min-height: 520px; object-fit: cover; object-position: center; filter: saturate(.86) contrast(1.04) brightness(.72); }
+.blueprint::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,20,13,.04) 55%, rgba(8,20,13,.85)); pointer-events: none; }
+.blueprint-pin { position: absolute; z-index: 2; display: flex; align-items: center; gap: 8px; color: white; filter: drop-shadow(0 2px 5px #07130d); }
+.blueprint-pin::after { content: ""; position: absolute; left: 18px; top: 35px; width: 1px; height: 42px; background: var(--acid); opacity: .9; }
+.blueprint-pin b { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--acid); color: var(--ink); font: 700 11px var(--mono); border: 2px solid white; }
+.blueprint-pin i { background: rgba(8,20,13,.82); border: 1px solid rgba(255,255,255,.55); padding: 6px 8px; font: 500 9px var(--mono); letter-spacing: .07em; text-transform: uppercase; font-style: normal; }
+.pin-1 { left: 22%; top: 63%; }
+.pin-2 { left: 51%; top: 55%; }
+.pin-3 { left: 56%; top: 28%; }
+.pin-4 { left: 74%; top: 38%; }
+.pin-5 { left: 38%; top: 76%; }
+.blueprint-status { position: absolute; z-index: 3; left: 20px; bottom: 18px; display: flex; flex-direction: column; gap: 4px; color: white; }
+.blueprint-status strong { color: var(--acid); font: 700 11px var(--mono); letter-spacing: .09em; }
+.blueprint-status span { font: 9px var(--mono); }
+.scaled-template > img { filter: saturate(.45) contrast(1.05) brightness(.58); }
+.blueprint-key { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--ink); }
+.blueprint-key span { min-width: 0; padding: 13px 10px; border-right: 1px solid var(--ink); font: 700 8px var(--mono); letter-spacing: .05em; }
+.blueprint-key span:last-child { border-right: 0; }
+.blueprint-key b { color: #719177; margin-right: 5px; }
+.blueprint-key i { display: block; margin-top: 5px; color: #637168; font-style: normal; font-weight: 400; }
+.copy-order { display: grid; grid-template-columns: .55fr 2fr; border: 1px solid var(--ink); border-top: 0; }
+.copy-order-head { padding: 25px; background: var(--acid); display: flex; flex-direction: column; gap: 7px; }
+.copy-order-head span { font: 9px var(--mono); letter-spacing: .1em; }
+.copy-order-head strong { font-size: 27px; }
+.copy-order ol { display: grid; grid-template-columns: repeat(5, 1fr); list-style: none; margin: 0; padding: 0; }
+.copy-order li { display: flex; flex-direction: column; gap: 12px; padding: 20px 16px; border-left: 1px solid var(--ink); }
+.copy-order li > b { font: 700 10px var(--mono); color: #66806e; }
+.copy-order li span { font-size: 10px; line-height: 1.5; }
+.copy-order li strong { display: block; font-size: 11px; margin-bottom: 4px; }
+
 @media (max-width: 800px) {
   .workforce-grid,
   .personality-shell,
-  .reference-pair { grid-template-columns: 1fr; }
+  .reference-pair,
+  .copy-order { grid-template-columns: 1fr; }
   .cap-card { border-right: 0; border-bottom: 1px solid var(--ink); }
+  .copy-order ol { grid-template-columns: 1fr 1fr; }
+  .copy-order li { border-top: 1px solid var(--ink); }
+  .blueprint { min-height: 430px; }
+  .blueprint > img { min-height: 430px; }
+  .blueprint-key { grid-template-columns: 1fr 1fr; }
+  .blueprint-key span { border-bottom: 1px solid var(--ink); }
 }
 
 @media (max-width: 520px) {
   .personality-grid { grid-template-columns: 1fr; }
   .personality-grid article:nth-child(odd) { border-right: 0; }
   .personality-grid article:nth-last-child(2) { border-bottom: 1px solid var(--ink); }
+  .copy-order ol { grid-template-columns: 1fr; }
+  .blueprint { min-height: 350px; }
+  .blueprint > img { min-height: 350px; }
+  .blueprint-pin i { display: none; }
+  .pin-1 { left: 15%; }
+  .pin-4 { left: 78%; }
 }

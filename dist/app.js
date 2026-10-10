@@ -35,11 +35,23 @@ function render() {
     $("#mapFarm").textContent = `${level.zones.farmland} plots`;
     $("#mapWood").textContent = `${level.zones.woodland} plots`;
     $("#mapMine").textContent = `${level.zones.mines} plots`;
+    $("#facilityCount").textContent = level.zones.production == null ? "—" : String(level.zones.production).padStart(2, "0");
+    $("#facilityConfidence").textContent = level.zones.production == null ? "data pending" : "community optimizer";
   }
 
   renderWorkforce(level);
 
-  $("#zoneMap").className = `zone-map ${state.mode}`;
+  const rv8 = state.rv === 8;
+  $("#zoneMap").className = `blueprint ${state.mode} ${rv8 ? "screenshot-backed" : "scaled-template"}`;
+  $("#blueprintLabel").textContent = rv8 ? "RV8 / SCREENSHOT BLUEPRINT" : `RV${state.rv} / SCALABLE TEMPLATE`;
+  $("#blueprintStatus").textContent = rv8 ? "SCREENSHOT-BACKED RV8" : `SCALE FOR RV${state.rv}`;
+  $("#blueprintCaution").textContent = rv8
+    ? "Placement guide · terrain is not tile-exact"
+    : "RV8 visual base · exact level screenshot not verified";
+  $("#scaleNoteTitle").textContent = rv8 ? "RV8 reference" : `RV${state.rv} scaling rule`;
+  $("#scaleNote").textContent = rv8
+    ? "RV8 uses the supplied production screenshot as its visual source. Counts come from the selected data record."
+    : `Use the same five-part structure, then match the displayed RV${state.rv} counts. This is clearly marked as a scalable template—not an exact screenshot for this level.`;
   $("#decorScore").textContent = state.mode === "bare" ? "0% decor reserve" : "8% decor reserve";
   $("#modeNoteTitle").textContent = state.mode === "bare" ? "Protect every tile" : "Frame, don’t fragment";
   $("#modeNote").textContent = state.mode === "bare"
@@ -52,6 +64,7 @@ function renderWorkforce(level) {
   const cap = level.productionCrew;
   $("#workforceTitle").textContent = `RV${state.rv} Aniimo crew`;
   $("#aniimoCap").textContent = String(cap).padStart(2, "0");
+  $("#aniimoCapacity").textContent = String(level.productionCapacity ?? cap).padStart(2, "0");
   $("#capNote").textContent = cap === 0
     ? "No active production crew in the level-one plan."
     : `Aniimo assigned by the production-first RV${state.rv} suggested layout.`;

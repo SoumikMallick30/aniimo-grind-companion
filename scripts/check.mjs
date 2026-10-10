@@ -6,13 +6,13 @@ if (data.levels.length !== 20) throw new Error("Expected records for RV1–RV20"
 for (let level = 1; level <= 20; level++) {
   if (data.levels[level - 1]?.rvLevel !== level) throw new Error(`Missing RV${level}`);
 }
-const expectedCrew = [0,5,8,10,15,17,20,24,26,28,30,32,32,35,38,40,42,43,44,45];
+const expectedCrew = [0,5,8,10,15,17,20,18,26,28,30,32,32,35,38,40,42,43,44,45];
 if (data.levels.some((item, index) => item.productionCrew !== expectedCrew[index])) {
   throw new Error("Production crew ladder is invalid");
 }
 const rv8 = data.levels.find((item) => item.rvLevel === 8);
 const rv20 = data.levels.find((item) => item.rvLevel === 20);
-if (!rv8 || rv8.zones.farmland !== 16 || rv8.zones.woodland !== 8 || rv8.zones.mines !== 4) {
+if (!rv8 || rv8.productionCapacity !== 24 || rv8.zones.farmland !== 18 || rv8.zones.woodland !== 9 || rv8.zones.mines !== 4) {
   throw new Error("RV8 reference counts are invalid");
 }
 if (!rv20 || rv20.zones.farmland !== 40 || rv20.zones.woodland !== 20 || rv20.zones.mines !== 10) {

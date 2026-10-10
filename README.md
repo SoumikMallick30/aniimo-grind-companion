@@ -9,7 +9,7 @@ A production-first Homeland layout companion for **Aniimo**, built around the us
 - Functional RV1–RV20 selector with community-sourced progression counts
 - Decoration-free and decorated layout variants
 - Separate farmland, woodland, mines, production, and utilities zones
-- Per-RV active Aniimo count used by a production-first suggested layout
+- Per-RV assigned Aniimo count and available production capacity kept as separate fields
 - Dynamic Homeland ability priorities and the full facility personality map
 - Production-first scoring and practical zone notes
 - Editable JSON game-data schema
@@ -43,12 +43,13 @@ Required fields for a complete level:
 ```json
 {
   "rvLevel": 8,
-  "verification": "verified",
-  "productionCrew": 24,
+  "verification": "community",
+  "productionCrew": 18,
+  "productionCapacity": 24,
   "workforceTier": "expanded",
   "zones": {
-    "farmland": 16,
-    "woodland": 8,
+    "farmland": 18,
+    "woodland": 9,
     "mines": 4,
     "production": null,
     "utilities": null
@@ -72,6 +73,7 @@ scripts/check.mjs        Data and output validation
 - Visual reference: user-provided RV8 Aniimo build-mode screenshot
 - RV1–RV20 progression counts: community references cross-checked on 2026-10-10
 - RV8 visual reference and counts: user screenshot plus current progression references
+- RV8 production calculation and worker requirements: [Aniimax community optimizer](https://ae-bii.github.io/aniimax/) (community data, checked 2026-10-10)
 - Community maximum: RV20, checked 2026-10-10
 
 This is an independent fan-made planning tool and is not affiliated with Aniimo or Kingsglory.
