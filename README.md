@@ -2,6 +2,8 @@
 
 A production-first Homeland layout companion for **Aniimo**, built around the user's RV8 in-game screenshot rather than generic farm imagery.
 
+**Live site:** https://soumikmallick30.github.io/aniimo-grind-companion/
+
 ## MVP scope
 
 - English-only interface
