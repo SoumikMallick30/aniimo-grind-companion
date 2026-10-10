@@ -5,29 +5,45 @@
     "maxRvVerification": "community",
     "checkedAt": "2026-10-10",
     "referenceImage": "User-provided RV8 in-game build-mode screenshot",
-    "disclaimer": "Independent fan-made tool. Unknown values remain null and are never estimated."
+    "disclaimer": "Independent fan-made tool. Unknown values remain null and are never estimated.",
+    "workforceGuidance": {
+      "verification": "community",
+      "rule": "Match Homeland Ability first; use personality only as a facility-specific efficiency bonus.",
+      "fieldAbilities": ["Grass", "Water", "Earth", "Dark", "Hauling"],
+      "facilityAbilities": ["Fire", "Wind", "Lightning", "Ice", "Light", "Artisanship", "Leisure", "Perfumery"],
+      "personalities": [
+        {"code":"E","name":"Energetic","facilities":"Bouncy Brew Keg · Woodworking Bench"},
+        {"code":"I","name":"Instinctive","facilities":"Dewy House · Phonolfactory Table"},
+        {"code":"S","name":"Practical","facilities":"Claw Game Cooker · Chimney Kiln"},
+        {"code":"N","name":"Nimble","facilities":"Jukebox Dryer · Blazing Stove · Floral Windmill"},
+        {"code":"T","name":"Tenacious","facilities":"Carousel Mill · Simmering Pot"},
+        {"code":"F","name":"Faithful","facilities":"Joy Wheel Loom · Well · Starfall Hammock"},
+        {"code":"J","name":"Judicious","facilities":"Crafting Table · Tidewhisper Sandcastle · Nimbus Bed"},
+        {"code":"P","name":"Playful","facilities":"Mine · Pickling Jar"}
+      ]
+    }
   },
   "levels": [
-    {"rvLevel":1,"verification":"community","zones":{"farmland":0,"woodland":0,"mines":0,"production":null,"utilities":null}},
-    {"rvLevel":2,"verification":"community","zones":{"farmland":4,"woodland":0,"mines":0,"production":null,"utilities":null}},
-    {"rvLevel":3,"verification":"community","zones":{"farmland":6,"woodland":3,"mines":0,"production":null,"utilities":null}},
-    {"rvLevel":4,"verification":"community","zones":{"farmland":8,"woodland":4,"mines":0,"production":null,"utilities":null}},
-    {"rvLevel":5,"verification":"community","zones":{"farmland":10,"woodland":5,"mines":0,"production":null,"utilities":null}},
-    {"rvLevel":6,"verification":"community","zones":{"farmland":12,"woodland":6,"mines":3,"production":null,"utilities":null}},
-    {"rvLevel":7,"verification":"community","zones":{"farmland":14,"woodland":7,"mines":3,"production":null,"utilities":null}},
-    {"rvLevel":8,"verification":"verified","zones":{"farmland":16,"woodland":8,"mines":4,"production":null,"utilities":null}},
-    {"rvLevel":9,"verification":"community","zones":{"farmland":18,"woodland":9,"mines":4,"production":null,"utilities":null}},
-    {"rvLevel":10,"verification":"community","zones":{"farmland":20,"woodland":10,"mines":5,"production":null,"utilities":null}},
-    {"rvLevel":11,"verification":"community","zones":{"farmland":22,"woodland":11,"mines":5,"production":null,"utilities":null}},
-    {"rvLevel":12,"verification":"community","zones":{"farmland":24,"woodland":12,"mines":6,"production":null,"utilities":null}},
-    {"rvLevel":13,"verification":"community","zones":{"farmland":26,"woodland":13,"mines":6,"production":null,"utilities":null}},
-    {"rvLevel":14,"verification":"community","zones":{"farmland":28,"woodland":14,"mines":7,"production":null,"utilities":null}},
-    {"rvLevel":15,"verification":"community","zones":{"farmland":30,"woodland":15,"mines":7,"production":null,"utilities":null}},
-    {"rvLevel":16,"verification":"community","zones":{"farmland":32,"woodland":16,"mines":8,"production":null,"utilities":null}},
-    {"rvLevel":17,"verification":"community","zones":{"farmland":34,"woodland":17,"mines":8,"production":null,"utilities":null}},
-    {"rvLevel":18,"verification":"community","zones":{"farmland":36,"woodland":18,"mines":9,"production":null,"utilities":null}},
-    {"rvLevel":19,"verification":"community","zones":{"farmland":38,"woodland":19,"mines":9,"production":null,"utilities":null}},
-    {"rvLevel":20,"verification":"community","zones":{"farmland":40,"woodland":20,"mines":10,"production":null,"utilities":null}}
+    {"rvLevel":1,"verification":"community","aniimoCap":0,"workforceTier":"locked","zones":{"farmland":0,"woodland":0,"mines":0,"production":null,"utilities":null}},
+    {"rvLevel":2,"verification":"community","aniimoCap":8,"workforceTier":"field","zones":{"farmland":4,"woodland":0,"mines":0,"production":null,"utilities":null}},
+    {"rvLevel":3,"verification":"community","aniimoCap":11,"workforceTier":"mine","zones":{"farmland":6,"woodland":3,"mines":0,"production":null,"utilities":null}},
+    {"rvLevel":4,"verification":"community","aniimoCap":14,"workforceTier":"facility","zones":{"farmland":8,"woodland":4,"mines":0,"production":null,"utilities":null}},
+    {"rvLevel":5,"verification":"community","aniimoCap":17,"workforceTier":"facility","zones":{"farmland":10,"woodland":5,"mines":0,"production":null,"utilities":null}},
+    {"rvLevel":6,"verification":"community","aniimoCap":20,"workforceTier":"expanded","zones":{"farmland":12,"woodland":6,"mines":3,"production":null,"utilities":null}},
+    {"rvLevel":7,"verification":"community","aniimoCap":22,"workforceTier":"expanded","zones":{"farmland":14,"woodland":7,"mines":3,"production":null,"utilities":null}},
+    {"rvLevel":8,"verification":"verified","aniimoCap":24,"workforceTier":"expanded","zones":{"farmland":16,"woodland":8,"mines":4,"production":null,"utilities":null}},
+    {"rvLevel":9,"verification":"community","aniimoCap":26,"workforceTier":"expanded","zones":{"farmland":18,"woodland":9,"mines":4,"production":null,"utilities":null}},
+    {"rvLevel":10,"verification":"community","aniimoCap":28,"workforceTier":"climate","zones":{"farmland":20,"woodland":10,"mines":5,"production":null,"utilities":null}},
+    {"rvLevel":11,"verification":"community","aniimoCap":30,"workforceTier":"climate","zones":{"farmland":22,"woodland":11,"mines":5,"production":null,"utilities":null}},
+    {"rvLevel":12,"verification":"community","aniimoCap":32,"workforceTier":"power","zones":{"farmland":24,"woodland":12,"mines":6,"production":null,"utilities":null}},
+    {"rvLevel":13,"verification":"community","aniimoCap":34,"workforceTier":"power","zones":{"farmland":26,"woodland":13,"mines":6,"production":null,"utilities":null}},
+    {"rvLevel":14,"verification":"community","aniimoCap":36,"workforceTier":"power","zones":{"farmland":28,"woodland":14,"mines":7,"production":null,"utilities":null}},
+    {"rvLevel":15,"verification":"community","aniimoCap":38,"workforceTier":"power","zones":{"farmland":30,"woodland":15,"mines":7,"production":null,"utilities":null}},
+    {"rvLevel":16,"verification":"community","aniimoCap":40,"workforceTier":"power","zones":{"farmland":32,"woodland":16,"mines":8,"production":null,"utilities":null}},
+    {"rvLevel":17,"verification":"community","aniimoCap":42,"workforceTier":"power","zones":{"farmland":34,"woodland":17,"mines":8,"production":null,"utilities":null}},
+    {"rvLevel":18,"verification":"community","aniimoCap":43,"workforceTier":"power","zones":{"farmland":36,"woodland":18,"mines":9,"production":null,"utilities":null}},
+    {"rvLevel":19,"verification":"community","aniimoCap":44,"workforceTier":"power","zones":{"farmland":38,"woodland":19,"mines":9,"production":null,"utilities":null}},
+    {"rvLevel":20,"verification":"community","aniimoCap":45,"workforceTier":"power","zones":{"farmland":40,"woodland":20,"mines":10,"production":null,"utilities":null}}
   ]
 }
 

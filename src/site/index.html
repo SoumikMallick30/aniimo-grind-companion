@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="workforce.css">
 </head>
 <body>
   <header class="topbar">
@@ -65,13 +66,25 @@
       </div>
     </section>
 
+    <section class="workforce wrap">
+      <div class="section-title"><span>03 / WORKFORCE</span><h2 id="workforceTitle">RV8 Aniimo crew</h2><div class="confidence community">COMMUNITY GUIDE</div></div>
+      <div class="workforce-grid">
+        <article class="cap-card"><span>ANIIMO PLACES</span><strong id="aniimoCap">24</strong><p id="capNote">Maximum Aniimo assigned across the Home at RV8.</p><small>CAPACITY, NOT A REQUIRED HEADCOUNT</small></article>
+        <article class="ability-card"><div class="card-head"><span>ABILITY PRIORITY</span><span>TYPE / JOB</span></div><p>Choose the exact Aniimo form by its Homeland Ability. Element alone does not guarantee the job.</p><div id="abilityChips" class="ability-chips"></div><div class="ability-legend"><span><i class="field-dot"></i>FIELD CORE</span><span><i class="facility-dot"></i>FACILITY / LATER</span></div></article>
+      </div>
+      <div class="personality-shell">
+        <div class="personality-intro"><span>PERSONALITY MATCH</span><h3>Ability first.<br>Personality second.</h3><p>A matching personality letter improves work efficiency at its named facility by 20%. It does not replace the facility’s required ability.</p></div>
+        <div id="personalityGrid" class="personality-grid"></div>
+      </div>
+    </section>
+
     <section class="reference wrap">
-      <div class="section-title"><span>03 / REFERENCE</span><h2>Your RV8, not a stock farm.</h2></div>
+      <div class="section-title"><span>04 / REFERENCE</span><h2>Your RV8, not a stock farm.</h2></div>
       <figure><img src="assets/rv8-reference.png" alt="User-provided Aniimo RV8 screenshot showing fenced production plots in build mode"><figcaption><span>IN-GAME CAPTURE · RV8</span><p>This screenshot anchors the app’s visual language: the elevated build view, pale placement grid, green terrain, and fenced production blocks.</p></figcaption></figure>
     </section>
 
     <section class="data-section wrap">
-      <div><span class="eyebrow">04 / DATA</span><h2>Future updates,<br>without rewrites.</h2></div>
+      <div><span class="eyebrow">05 / DATA</span><h2>Future updates,<br>without rewrites.</h2></div>
       <div class="schema"><div class="schema-head"><span>game-data.json</span><span>EDITABLE</span></div><pre><code>{
   "rvLevel": <b>8</b>,
   "verification": <em>"verified"</em>,
