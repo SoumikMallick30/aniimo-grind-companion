@@ -49,12 +49,12 @@ function render() {
 
 function renderWorkforce(level) {
   const guidance = state.data.meta.workforceGuidance;
-  const cap = level.aniimoCap;
+  const cap = level.productionCrew;
   $("#workforceTitle").textContent = `RV${state.rv} Aniimo crew`;
   $("#aniimoCap").textContent = String(cap).padStart(2, "0");
   $("#capNote").textContent = cap === 0
-    ? "Homeland workers are not assignable yet. Worker assignment starts at RV2."
-    : `Maximum Aniimo assigned across the Home at RV${state.rv}.`;
+    ? "No active production crew in the level-one plan."
+    : `Aniimo assigned by the production-first RV${state.rv} suggested layout.`;
 
   const unlocked = new Set();
   if (state.rv >= 2) guidance.fieldAbilities.forEach((item) => unlocked.add(item));

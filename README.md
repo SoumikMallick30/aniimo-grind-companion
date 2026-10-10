@@ -9,7 +9,7 @@ A production-first Homeland layout companion for **Aniimo**, built around the us
 - Functional RV1–RV20 selector with community-sourced progression counts
 - Decoration-free and decorated layout variants
 - Separate farmland, woodland, mines, production, and utilities zones
-- Per-RV Aniimo assignment capacity from RV1 through RV20
+- Per-RV active Aniimo count used by a production-first suggested layout
 - Dynamic Homeland ability priorities and the full facility personality map
 - Production-first scoring and practical zone notes
 - Editable JSON game-data schema
@@ -44,7 +44,7 @@ Required fields for a complete level:
 {
   "rvLevel": 8,
   "verification": "verified",
-  "aniimoCap": 24,
+  "productionCrew": 24,
   "workforceTier": "expanded",
   "zones": {
     "farmland": 16,
