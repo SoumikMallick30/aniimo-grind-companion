@@ -363,7 +363,7 @@ function getPersistedFieldIds() {
         'target-amount', 'current-amount',
         'strategy-level-up', 'strategy-priorities', 'level-up-target',
         'mode-simple', 'mode-advanced', 'home-level',
-        'storage-count', 'open-plot-count',
+        'storage-count', 'open-plot-count', 'open-plots', 'layout-decoration',
         'ecological-module-level', 'kitchen-module-level',
         'resource-detector-level', 'crafting-module-level',
         'rate-unit', 'season-on', 'layout-sim-on', 'season-currency-per-day',
@@ -571,9 +571,15 @@ function selectedHomeLevel() {
 
 let plotCountWasEdited = false;
 
+function selectedOpenPlots() {
+    const valid = new Set(homelandPlots().map(plot => plot.number));
+    const values = String(document.getElementById('open-plots').value || '').split(',')
+        .map(Number).filter(number => valid.has(number));
+    return new Set(values.length ? values : [1]);
+}
+
 function selectedOpenPlotCount() {
-    return Math.max(1, Math.min(homelandPlots().length,
-        Math.round(numberOrDefault(document.getElementById('open-plot-count').value, selectedHomeLevel()))));
+    return selectedOpenPlots().size;
 }
 
 function selectedStorageCount() {
@@ -582,10 +588,24 @@ function selectedStorageCount() {
 }
 
 function syncLayoutSpaceWithRv() {
-    if (!plotCountWasEdited) document.getElementById('open-plot-count').value = String(selectedHomeLevel());
+    if (!plotCountWasEdited) {
+        const plots = homelandPlots().filter(plot => plot.number <= selectedHomeLevel()).map(plot => plot.number);
+        document.getElementById('open-plots').value = plots.join(',');
+        document.getElementById('open-plot-count').value = String(plots.length);
+    }
+    renderPlotPicker();
     document.getElementById('layout-space-note').textContent = plotCountWasEdited
-        ? 'Using your unlocked plot count (not an assumed RV default).'
-        : 'Plot count follows your selected RV until you change it.';
+        ? `${selectedOpenPlotCount()} unlocked plot${selectedOpenPlotCount() === 1 ? '' : 's'} selected by you.`
+        : `RV ${selectedHomeLevel()} default selected. Tap any plot to match your real Homeland.`;
+}
+
+function renderPlotPicker() {
+    const picker = document.getElementById('plot-picker');
+    if (!picker) return;
+    const open = selectedOpenPlots();
+    picker.innerHTML = HOMELAND_PLOTS.flatMap(row => row.map(number =>
+        `<button type="button" class="plot-choice${open.has(number) ? ' open' : ''}" data-plot="${number}" aria-pressed="${open.has(number)}"><span>Plot</span><b>${number}</b></button>`
+    )).join('');
 }
 
 function populateHomeLevels() {
@@ -1238,16 +1258,24 @@ function attachLayoutHandlers() {
     document.getElementById('layout-replay').addEventListener('click', () => {
         if (layoutSim) resetLayoutSim(layoutSim);
     });
-    document.getElementById('open-plot-count').addEventListener('input', () => {
+    document.getElementById('plot-picker').addEventListener('click', event => {
+        const button = event.target.closest('[data-plot]');
+        if (!button) return;
+        const open = selectedOpenPlots();
+        const number = Number(button.dataset.plot);
+        if (open.has(number) && open.size > 1) open.delete(number); else open.add(number);
+        document.getElementById('open-plots').value = [...open].sort((a, b) => a - b).join(',');
+        document.getElementById('open-plot-count').value = String(open.size);
         plotCountWasEdited = true;
         syncLayoutSpaceWithRv();
+        saveInputsToStorage();
     });
     document.getElementById('home-level').addEventListener('change', syncLayoutSpaceWithRv);
 }
 
 function drawLayout(drawn) {
     const diagram = document.getElementById('layout-diagram');
-    diagram.innerHTML = homelandSvg(drawn.layout, drawn.openPlotCount);
+    diagram.innerHTML = homelandSvg(drawn.layout, drawn.openPlots, drawn.decorationPlot);
     // With the simulation off, the layout is drawn on its own.
     const on = document.getElementById('layout-sim-on').checked;
     diagram.classList.toggle('no-sim', !on);
@@ -1271,9 +1299,12 @@ function renderHomelandLayout(plan) {
     // Worked out in a worker of its own: a large homeland takes a few seconds.
     const { pieces, unplaced } = homelandPieces(plan, lastPlanInput);
     const homeLevel = layoutHomeLevel();
-    const openPlotCount = selectedOpenPlotCount();
+    const openPlots = selectedOpenPlots();
+    const openPlotCount = openPlots.size;
     const storageCount = selectedStorageCount();
-    const cells = homelandPlots().filter(p => p.number <= openPlotCount);
+    const decorationPlot = document.getElementById('layout-decoration').value === 'one' && openPlotCount > 1
+        ? Math.max(...openPlots) : null;
+    const cells = homelandPlots().filter(p => openPlots.has(p.number) && p.number !== decorationPlot);
     if (layoutWorker) layoutWorker.terminate();
     layoutWorker = new Worker(WORKER_URL.replace('worker.js', 'layout-worker.js'), { type: 'module' });
     layoutWorker.onmessage = (event) => {
@@ -1282,6 +1313,7 @@ function renderHomelandLayout(plan) {
         if (runId !== layoutRunId) return;
         const layout = event.data;
         const storageAts = layout.storageAts || [layout.storageAt];
+        const actualStorageCount = storageAts.length;
         // Buildings carry nothing themselves.
         const members = layout.pieces.flatMap(p => p.members).map(m => ({ ...m, weight: m.weight || 0 }));
         const trips = members.reduce((sum, m) => sum + m.weight, 0);
@@ -1295,9 +1327,9 @@ function renderHomelandLayout(plan) {
             unplaced.length ? `Not placed, size unknown: ${unplaced.join(', ')}.` : '',
         ].filter(Boolean).join(' ');
         document.getElementById('layout-summary').textContent = `${trips > 0
-            ? `${formatNumber(Math.round(trips))} trips/hour to ${storageCount} Storage Unit${storageCount === 1 ? '' : 's'}, ${(walked / trips).toFixed(1)} tiles each on average, inside ${openPlotCount} open plot${openPlotCount === 1 ? '' : 's'}.`
-            : `Nothing in this plan is carried to the ${storageCount} Storage Unit${storageCount === 1 ? '' : 's'}.`}${notes ? ` ${notes}` : ''}`;
-        lastLayout = { layout, homeLevel, openPlotCount };
+            ? `${actualStorageCount} Storage Unit${actualStorageCount === 1 ? '' : 's'} · ${openPlotCount} open plot${openPlotCount === 1 ? '' : 's'} · busy buildings kept close to storage.${decorationPlot ? ` Plot ${decorationPlot} stays free for decoration.` : ''}`
+            : `Nothing in this plan is carried to the ${actualStorageCount} Storage Unit${actualStorageCount === 1 ? '' : 's'}.`}${notes ? ` ${notes}` : ''}`;
+        lastLayout = { layout, homeLevel, openPlots: [...openPlots], decorationPlot };
         drawLayout(lastLayout);
         setStep('layout', 'done');
     };
@@ -1324,7 +1356,7 @@ function stopLayout() {
 let layoutShowsWhole = false;
 let lastLayout = null;
 
-function homelandSvg(layout, openPlotCount) {
+function homelandSvg(layout, openPlotNumbers, decorationPlot = null) {
     // Each environment building in use covers the 9x9 square around its center, drawn under
     // everything in its mode's color as on the building's own map.
     const coverage = layout.pieces.flatMap(p => p.members)
@@ -1332,6 +1364,7 @@ function homelandSvg(layout, openPlotCount) {
         .map(m => ({ x: m.x + m.w / 2 - ENVIRONMENT_COVERAGE_RADIUS, y: m.y + m.h / 2 - ENVIRONMENT_COVERAGE_RADIUS, w: ENVIRONMENT_COVERAGE_RADIUS * 2, h: ENVIRONMENT_COVERAGE_RADIUS * 2, mode: m.mode }));
     // The whole homeland, its plots marked out and the ones not open yet shaded.
     const plots = homelandPlots();
+    const openPlots = new Set(openPlotNumbers);
     // Zoomed to what's placed, a couple of tiles around it, unless the whole homeland is asked for.
     const storages = layout.storages || [layout.storage];
     const placed = [...storages, ...layout.pieces.flatMap(p => p.members)];
@@ -1341,11 +1374,12 @@ function homelandSvg(layout, openPlotCount) {
     const maxX = whole ? Math.max(...plots.map(p => p.x + p.w)) + 1 : Math.ceil(Math.max(...placed.map(r => r.x + r.w))) + 2;
     const maxY = whole ? Math.max(...plots.map(p => p.y + p.h)) + 1 : Math.ceil(Math.max(...placed.map(r => r.y + r.h))) + 2;
     // Locked plots last, so where one meets an open plot, the edge between them reads red.
-    const plotShapes = [...plots].sort((a, b) => (b.number <= openPlotCount) - (a.number <= openPlotCount)).map(p => {
-        const open = p.number <= openPlotCount;
+    const plotShapes = [...plots].sort((a, b) => Number(openPlots.has(b.number)) - Number(openPlots.has(a.number))).map(p => {
+        const open = openPlots.has(p.number);
+        const decoration = p.number === decorationPlot;
         // An open plot is named by its number; one still to come by the RV level that opens it.
-        return `<g class="layout-plot${open ? '' : ' locked'}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" />
-            <text x="${p.x + 0.6}" y="${p.y + 0.9}" font-size="0.9">${open ? `Plot ${p.number}` : 'Locked'}</text></g>`;
+        return `<g class="layout-plot${open ? '' : ' locked'}${decoration ? ' decoration' : ''}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" />
+            <text x="${p.x + 0.6}" y="${p.y + 0.9}" font-size="0.9">${decoration ? `Plot ${p.number} · DECORATION` : open ? `Plot ${p.number}` : 'Locked'}</text></g>`;
     }).join('');
     const lines = [];
     for (let x = minX; x <= maxX; x++) lines.push(`<line x1="${x}" y1="${minY}" x2="${x}" y2="${maxY}" />`);
@@ -4228,7 +4262,7 @@ async function initApp() {
     populateHomeLevels();
     populateLevelUpTargets();
     loadInputsFromStorage(savedData);
-    plotCountWasEdited = !!savedData && Object.prototype.hasOwnProperty.call(savedData, 'open-plot-count');
+    plotCountWasEdited = !!savedData && Object.prototype.hasOwnProperty.call(savedData, 'open-plots');
     syncLayoutSpaceWithRv();
     attachAutoSave();
     attachFacilityTierHandlers();

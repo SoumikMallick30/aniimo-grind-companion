@@ -19,19 +19,19 @@
             <button class="toggle-button" onclick="toggleTheme()" id="themeToggle">light</button>
         </div>
     </header>
-    <p class="subtitle">Production-first Homeland optimizer · RV1 to the current community maximum</p>
+    <p class="subtitle">Build a clean production layout from the plots and Storage Units you actually own.</p>
     <p class="disclaimer"><span class="disclaimer-icon" aria-hidden="true">⚠</span>A few recipes, facility levels and counts haven't been confirmed in game yet; they're marked where they're used.</p>
 
     <section class="companion-intro" aria-label="Planner workflow">
         <div class="intro-copy">
-            <span class="intro-kicker">PLAN · ASSIGN · PLACE</span>
-            <h2>One production plan.<br><em>A layout you can actually build.</em></h2>
-            <p>Tell the optimizer what your Homeland owns. It calculates the facility plan, required Aniimo team, and a compact top-down layout around Storage.</p>
+            <span class="intro-kicker">YOUR LAND · YOUR BUILDINGS · YOUR LAYOUT</span>
+            <h2>Pick what you unlocked.<br><em>Get a layout you can copy.</em></h2>
+            <p>Select your open land on the Homeland map. The planner places production buildings around your Storage Units and shows the Aniimo team needed.</p>
         </div>
         <ol class="workflow-steps">
-            <li><b>01</b><span>Choose RV and strategy</span></li>
-            <li><b>02</b><span>Generate the best plan</span></li>
-            <li><b>03</b><span>Copy the calculated layout</span></li>
+            <li><b>01</b><span>Select your unlocked plots</span></li>
+            <li><b>02</b><span>Enter Storage Units and owned facilities</span></li>
+            <li><b>03</b><span>Copy your visual layout</span></li>
         </ol>
         <details class="visual-reference">
             <summary>Open your production-zone references</summary>
@@ -129,18 +129,22 @@
                 </div>
 
                 <div class="layout-space-config">
-                    <h3>Layout space</h3>
-                    <p class="hint">Use what is actually unlocked on your Homeland. The layout will stay inside these plots and arrange busy facilities around every Storage Unit.</p>
+                    <span class="step-label">STEP 2</span>
+                    <h3>Choose your unlocked land</h3>
+                    <p class="hint">Tap the exact plots you have opened. Green plots will be used; dark plots stay locked.</p>
                     <div class="input-row">
                         <div class="input-field">
                             <label for="storage-count">Storage Units unlocked</label>
                             <input type="number" id="storage-count" value="1" min="1" max="20" step="1">
                         </div>
+                        <input type="hidden" id="open-plot-count" value="20">
+                        <input type="hidden" id="open-plots" value="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16">
                         <div class="input-field">
-                            <label for="open-plot-count">Plots open</label>
-                            <input type="number" id="open-plot-count" value="20" min="1" max="20" step="1">
+                            <label for="layout-decoration">Decoration space</label>
+                            <select id="layout-decoration"><option value="none">Use all open plots</option><option value="one">Keep one plot free</option></select>
                         </div>
                     </div>
+                    <div class="plot-picker" id="plot-picker" role="group" aria-label="Choose unlocked Homeland plots"></div>
                     <p id="layout-space-note" class="hint small">Plot count follows your selected RV until you change it.</p>
                 </div>
 
@@ -205,7 +209,7 @@
                     <div class="skip-chips" id="skip-chips"></div>
                 </details>
                 <button id="optimize-btn" class="optimize-btn">
-                    <span class="btn-text">Find the best plan</span>
+                    <span class="btn-text">Create my layout</span>
                     <span class="btn-loading" style="display: none;">Solving...</span>
                 </button>
                 <div id="progress-bar-container" class="progress-bar-container" style="display: none;">
@@ -311,10 +315,10 @@
                         <div class="layout-title-row"><div><span class="section-number">03 / BUILD MAP</span><h2>Homeland Layout</h2></div><span class="layout-badge">CALCULATED PLACEMENT</span></div>
                         <p class="hint" id="layout-summary"></p>
                         <ol class="layout-guide" aria-label="How to copy this layout">
-                            <li><b>1</b><span>Place the Storage Unit marked <strong>SU</strong>.</span></li>
-                            <li><b>2</b><span>Copy the busiest facilities closest to Storage.</span></li>
-                            <li><b>3</b><span>Match environment coverage before filling crop plots.</span></li>
-                            <li><b>4</b><span>Move idle buildings to the outer edge.</span></li>
+                            <li><b>1</b><span>Find <strong>SU1, SU2…</strong> and place your Storage Units.</span></li>
+                            <li><b>2</b><span>Copy each labelled building around its nearest Storage.</span></li>
+                            <li><b>3</b><span>Match the coloured farmland, woodland and mine blocks.</span></li>
+                            <li><b>4</b><span>Leave the marked decoration plot open if selected.</span></li>
                         </ol>
                         <details class="explain">
                             <summary>How it's laid out</summary>
