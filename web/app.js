@@ -1233,6 +1233,7 @@ const initialsOf = name => name.split(/[\s-]+/).map(w => w[0]).join('').toUpperC
 
 let layoutRunId = 0;
 let layoutWorker = null;
+let layoutView = '3d';
 
 // Every plot of the homeland, `{ number, x, y, w, h }` in tiles, with the top left at the origin.
 function homelandPlots() {
@@ -1271,16 +1272,23 @@ function attachLayoutHandlers() {
         saveInputsToStorage();
     });
     document.getElementById('home-level').addEventListener('change', syncLayoutSpaceWithRv);
+    document.querySelectorAll('input[name="layout-view"]').forEach(input => input.addEventListener('change', event => {
+        if (!event.target.checked) return;
+        layoutView = event.target.value;
+        if (lastLayout) drawLayout(lastLayout);
+    }));
 }
 
 function drawLayout(drawn) {
     const diagram = document.getElementById('layout-diagram');
-    diagram.innerHTML = homelandSvg(drawn.layout, drawn.openPlots, drawn.decorationPlot);
+    diagram.innerHTML = layoutView === '3d'
+        ? homelandIsometricSvg(drawn.layout, drawn.openPlots, drawn.decorationPlot)
+        : homelandSvg(drawn.layout, drawn.openPlots, drawn.decorationPlot);
     // With the simulation off, the layout is drawn on its own.
     const on = document.getElementById('layout-sim-on').checked;
     diagram.classList.toggle('no-sim', !on);
     const stock = new Map(planContext?.levelUp ? lastPlanInput?.level_up?.stock || [] : []);
-    startLayoutSim(on ? diagram.querySelector('.layout-svg') : null, layoutFlows(drawn.layout), stock);
+    startLayoutSim(on && layoutView === 'grid' ? diagram.querySelector('.layout-svg') : null, layoutFlows(drawn.layout), stock);
 }
 
 function renderHomelandLayout(plan) {
@@ -1355,6 +1363,50 @@ function stopLayout() {
 // Whether the layout shows the whole homeland rather than just what's placed; the player's toggle.
 let layoutShowsWhole = false;
 let lastLayout = null;
+
+function homelandIsometricSvg(layout, openPlotNumbers, decorationPlot = null) {
+    const open = new Set(openPlotNumbers);
+    const plots = homelandPlots().filter(plot => open.has(plot.number));
+    const storages = (layout.storages || [layout.storage]).map((item, i) => ({ ...item, facility: `Storage ${i + 1}`, storage: true }));
+    const objects = [...layout.pieces.flatMap(piece => piece.members), ...storages]
+        .sort((a, b) => (a.x + a.y + a.h) - (b.x + b.y + b.h));
+    const project = (x, y, z = 0) => [(x - y) * 1.05, (x + y) * .52 - z];
+    const points = list => list.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+    const diamond = (rect, z = 0) => points([project(rect.x, rect.y, z), project(rect.x + rect.w, rect.y, z), project(rect.x + rect.w, rect.y + rect.h, z), project(rect.x, rect.y + rect.h, z)]);
+    const allCorners = homelandPlots().flatMap(p => [project(p.x, p.y), project(p.x + p.w, p.y), project(p.x + p.w, p.y + p.h), project(p.x, p.y + p.h)]);
+    const minX = Math.min(...allCorners.map(p => p[0])) - 8, maxX = Math.max(...allCorners.map(p => p[0])) + 8;
+    const minY = Math.min(...allCorners.map(p => p[1])) - 24, maxY = Math.max(...allCorners.map(p => p[1])) + 16;
+    const plotUse = new Map(plots.map(plot => [plot.number, 0]));
+    objects.forEach(item => {
+        const cx = item.x + item.w / 2, cy = item.y + item.h / 2;
+        const plot = plots.find(p => cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
+        if (plot) plotUse.set(plot.number, plotUse.get(plot.number) + 1);
+    });
+    const plotShapes = plots.map(plot => {
+        const decor = plot.number === decorationPlot;
+        const [lx, ly] = project(plot.x + plot.w / 2, plot.y + plot.h / 2);
+        const label = decor ? 'DECORATION GARDEN' : plotUse.get(plot.number) ? `PRODUCTION · P${plot.number}` : `CLEAN WORK YARD · P${plot.number}`;
+        const accents = decor ? [[.25,.3],[.58,.28],[.42,.62],[.72,.65]].map(([dx,dy]) => {
+            const [x,y] = project(plot.x + plot.w * dx, plot.y + plot.h * dy, 1.4);
+            return `<g transform="translate(${x} ${y})"><circle cy="-1" r="1.8" fill="#7fe0a2"/><path d="M0 0v-2.8" stroke="#405f35" stroke-width=".5"/></g>`;
+        }).join('') : '';
+        return `<g class="iso-plot${decor ? ' decor' : ''}"><polygon points="${diamond(plot)}"/><polygon class="iso-path" points="${diamond({x:plot.x+plot.w*.43,y:plot.y,w:plot.w*.14,h:plot.h})}"/><text x="${lx}" y="${ly + 2}" text-anchor="middle">${label}</text>${accents}</g>`;
+    }).join('');
+    const objectShapes = objects.map(item => {
+        const height = item.storage ? 5 : item.building ? 4.5 : Math.max(1.2, Math.min(3.2, Math.sqrt(item.w * item.h) * .65));
+        const b = project(item.x + item.w, item.y), c = project(item.x + item.w, item.y + item.h), d = project(item.x, item.y + item.h);
+        const bt = project(item.x + item.w, item.y, height), ct = project(item.x + item.w, item.y + item.h, height), dt = project(item.x, item.y + item.h, height);
+        const color = item.storage ? '#d9ff67' : layoutColor(item);
+        const label = item.storage ? `SU${item.facility.split(' ')[1]}` : initialsOf(item.facility);
+        const [tx, ty] = project(item.x + item.w / 2, item.y + item.h / 2, height + .4);
+        return `<g class="iso-building" ${tipAttrs(item.facility, { detail: item.storage ? 'Storage Unit' : item.crop ? prettyItem(item.crop) : 'Production building', color })}>
+            <polygon points="${points([b,c,ct,bt])}" fill="${color}" opacity=".52"/><polygon points="${points([d,c,ct,dt])}" fill="${color}" opacity=".35"/>
+            <polygon points="${diamond(item, height)}" fill="${color}"/><text x="${tx}" y="${ty}" text-anchor="middle">${label}</text></g>`;
+    }).join('');
+    return `<svg class="layout-iso" viewBox="${minX} ${minY} ${maxX-minX} ${maxY-minY}" role="img" aria-label="Isometric 3D Homeland layout">
+        <defs><filter id="iso-shadow"><feDropShadow dx="0" dy="1.6" stdDeviation="1.5" flood-opacity=".28"/></filter></defs>
+        <g class="iso-ground">${plotShapes}</g><g filter="url(#iso-shadow)">${objectShapes}</g></svg>`;
+}
 
 function homelandSvg(layout, openPlotNumbers, decorationPlot = null) {
     // Each environment building in use covers the 9x9 square around its center, drawn under

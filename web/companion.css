@@ -103,6 +103,19 @@ header h1 { font-family: var(--font-body); font-weight: 750; letter-spacing: -.0
 .layout-guide span { font-size: .76rem; line-height: 1.45; }
 .layout-diagram { overflow: auto; min-height: 460px; padding: 18px; border-radius: 12px; background: var(--blueprint); border: 1px solid #355443; }
 .layout-diagram svg { min-width: 780px; }
+.view-switch { display: inline-flex; padding: 4px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); }
+.view-switch label { position: relative; padding: 8px 13px; border-radius: 999px; cursor: pointer; font-size: .72rem; font-weight: 700; }
+.view-switch input { position: absolute; opacity: 0; }
+.view-switch label:has(input:checked) { color: #15271e; background: var(--acid); }
+.layout-iso { width: 100%; min-width: 820px; min-height: 620px; overflow: visible; }
+.iso-plot > polygon:first-child { fill: #2e6745; stroke: #83c89b; stroke-width: .35; }
+.iso-plot:nth-child(even) > polygon:first-child { fill: #356f4d; }
+.iso-plot.decor > polygon:first-child { fill: #466833; stroke: #d9ff67; }
+.iso-path { fill: #c4af82; opacity: .5; }
+.iso-plot text { fill: rgba(239,255,244,.72); font: 700 1.1px var(--font-mono); letter-spacing: .05em; paint-order: stroke; stroke: #1c3b2a; stroke-width: .35px; }
+.iso-building { cursor: help; }
+.iso-building polygon { stroke: rgba(15,31,22,.8); stroke-width: .22; stroke-linejoin: round; }
+.iso-building text { fill: #14241a; font: 800 1.5px var(--font-mono); paint-order: stroke; stroke: rgba(255,255,255,.5); stroke-width: .25px; pointer-events: none; }
 .facility-category, .facility-card, .module-card { border-radius: 10px; }
 
 footer { grid-column: 1 / -1; margin-top: 38px; padding-top: 22px; border-top: 1px solid var(--border); }
