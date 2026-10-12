@@ -62,8 +62,8 @@ header h1 { font-family: var(--font-body); font-weight: 750; letter-spacing: -.0
 #layout-card, #aniimo-card { grid-column: 1; }
 #layout-card { order: -20; }
 #aniimo-card { order: -19; }
-.strategy > .hint, #level-up-cost, #level-up-stock, #recipes-section { display: none; }
-.strategy { border-top: 1px solid var(--border); padding-top: 22px; }
+.strategy, #recipes-section { display: none; }
+#facilitiesToggle, #mathToggle, #helpToggle { display: none; }
 .intro-copy h2 { margin: 10px 0 16px; border: 0; padding: 0; font-size: clamp(2rem, 4.4vw, 4.2rem); font-weight: 760; line-height: .98; letter-spacing: -.065em; }
 .intro-copy h2 em { color: var(--acid); font-style: normal; }
 .intro-copy p { max-width: 690px; color: #c5d1c9; }
