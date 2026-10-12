@@ -1368,29 +1368,56 @@ function homelandIsometricSvg(layout, openPlotNumbers, decorationPlot = null) {
     const open = new Set(openPlotNumbers);
     const plots = homelandPlots().filter(plot => open.has(plot.number));
     const storages = (layout.storages || [layout.storage]).map((item, i) => ({ ...item, facility: `Storage ${i + 1}`, storage: true }));
-    const objects = [...layout.pieces.flatMap(piece => piece.members), ...storages]
-        .sort((a, b) => (a.x + a.y + a.h) - (b.x + b.y + b.h));
+    const sourceObjects = [...storages, ...layout.pieces.flatMap(piece => piece.members)];
+    const workingPlots = plots.filter(plot => plot.number !== decorationPlot);
+    const buckets = new Map(workingPlots.map(plot => [plot.number, []]));
+    const category = item => item.storage ? 'Utilities' : ['Farmland', 'Woodland', 'Mine'].includes(item.facility) ? item.facility : item.building ? 'Environment' : 'Production';
+    const ordered = [...sourceObjects].sort((a, b) => category(a).localeCompare(category(b)) || (b.w * b.h) - (a.w * a.h));
+    ordered.forEach((item, i) => buckets.get(workingPlots[i % workingPlots.length].number).push(item));
+    const objects = workingPlots.flatMap(plot => {
+        const items = buckets.get(plot.number);
+        const rows = Math.max(1, Math.ceil(items.length / 2));
+        const laneH = (plot.h - 2) / rows;
+        return items.map((item, i) => {
+            const side = i % 2, row = Math.floor(i / 2);
+            const maxW = plot.w * .34, maxH = laneH * .7;
+            const scale = Math.min(1, maxW / item.w, maxH / item.h);
+            const w = item.w * scale, h = item.h * scale;
+            const x = plot.x + (side ? plot.w * .58 : plot.w * .08) + (maxW - w) / 2;
+            const y = plot.y + 1 + row * laneH + (laneH - h) / 2;
+            return { ...item, x, y, w, h, cleanCategory: category(item), cleanPlot: plot.number };
+        });
+    }).sort((a, b) => (a.x + a.y + a.h) - (b.x + b.y + b.h));
     const project = (x, y, z = 0) => [(x - y) * 1.05, (x + y) * .52 - z];
     const points = list => list.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
     const diamond = (rect, z = 0) => points([project(rect.x, rect.y, z), project(rect.x + rect.w, rect.y, z), project(rect.x + rect.w, rect.y + rect.h, z), project(rect.x, rect.y + rect.h, z)]);
     const allCorners = homelandPlots().flatMap(p => [project(p.x, p.y), project(p.x + p.w, p.y), project(p.x + p.w, p.y + p.h), project(p.x, p.y + p.h)]);
     const minX = Math.min(...allCorners.map(p => p[0])) - 8, maxX = Math.max(...allCorners.map(p => p[0])) + 8;
     const minY = Math.min(...allCorners.map(p => p[1])) - 24, maxY = Math.max(...allCorners.map(p => p[1])) + 16;
-    const plotUse = new Map(plots.map(plot => [plot.number, 0]));
+    const entrancePlot = plots.find(plot => plot.number === 1) || [...plots].sort((a, b) => b.y - a.y || Math.abs((a.x + a.w / 2) - 50) - Math.abs((b.x + b.w / 2) - 50))[0];
+    const plotUse = new Map(plots.map(plot => [plot.number, []]));
     objects.forEach(item => {
         const cx = item.x + item.w / 2, cy = item.y + item.h / 2;
         const plot = plots.find(p => cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
-        if (plot) plotUse.set(plot.number, plotUse.get(plot.number) + 1);
+        if (plot) plotUse.get(plot.number).push(item.cleanCategory);
     });
     const plotShapes = plots.map(plot => {
         const decor = plot.number === decorationPlot;
         const [lx, ly] = project(plot.x + plot.w / 2, plot.y + plot.h / 2);
-        const label = decor ? 'DECORATION GARDEN' : plotUse.get(plot.number) ? `PRODUCTION · P${plot.number}` : `CLEAN WORK YARD · P${plot.number}`;
-        const accents = decor ? [[.25,.3],[.58,.28],[.42,.62],[.72,.65]].map(([dx,dy]) => {
+        const uses = plotUse.get(plot.number);
+        const dominant = uses.length ? [...new Set(uses)].join(' + ') : 'Decoration';
+        const label = decor ? `DECORATION GARDEN · P${plot.number}` : `${dominant.toUpperCase()} · P${plot.number}`;
+        const accentPoints = decor ? [[.18,.18],[.82,.18],[.18,.82],[.82,.82],[.28,.68],[.72,.68]] : [[.08,.1],[.92,.9]];
+        const accents = accentPoints.map(([dx,dy]) => {
             const [x,y] = project(plot.x + plot.w * dx, plot.y + plot.h * dy, 1.4);
             return `<g transform="translate(${x} ${y})"><circle cy="-1" r="1.8" fill="#7fe0a2"/><path d="M0 0v-2.8" stroke="#405f35" stroke-width=".5"/></g>`;
-        }).join('') : '';
-        return `<g class="iso-plot${decor ? ' decor' : ''}"><polygon points="${diamond(plot)}"/><polygon class="iso-path" points="${diamond({x:plot.x+plot.w*.43,y:plot.y,w:plot.w*.14,h:plot.h})}"/><text x="${lx}" y="${ly + 2}" text-anchor="middle">${label}</text>${accents}</g>`;
+        }).join('');
+        const [ex, ey] = project(plot.x + plot.w / 2, plot.y + plot.h, .2);
+        const entrance = plot.number === entrancePlot.number ? `<g class="iso-entrance"><text x="${ex}" y="${ey + 4}" text-anchor="middle">▲ MAIN ENTRANCE</text></g>` : '';
+        return `<g class="iso-plot${decor ? ' decor' : ''}"><polygon points="${diamond(plot)}"/>
+            <polygon class="iso-path" points="${diamond({x:plot.x+plot.w*.43,y:plot.y,w:plot.w*.14,h:plot.h})}"/>
+            <polygon class="iso-path" points="${diamond({x:plot.x,y:plot.y+plot.h*.43,w:plot.w,h:plot.h*.14})}"/>
+            <text x="${lx}" y="${ly + 2}" text-anchor="middle">${label}</text>${accents}${entrance}</g>`;
     }).join('');
     const objectShapes = objects.map(item => {
         const height = item.storage ? 5 : item.building ? 4.5 : Math.max(1.2, Math.min(3.2, Math.sqrt(item.w * item.h) * .65));

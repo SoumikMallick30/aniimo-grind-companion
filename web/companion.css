@@ -113,6 +113,7 @@ header h1 { font-family: var(--font-body); font-weight: 750; letter-spacing: -.0
 .iso-plot.decor > polygon:first-child { fill: #466833; stroke: #d9ff67; }
 .iso-path { fill: #c4af82; opacity: .5; }
 .iso-plot text { fill: rgba(239,255,244,.72); font: 700 1.1px var(--font-mono); letter-spacing: .05em; paint-order: stroke; stroke: #1c3b2a; stroke-width: .35px; }
+.iso-entrance text { fill: #d9ff67; font-size: 1.35px; stroke: #15271e; stroke-width: .45px; }
 .iso-building { cursor: help; }
 .iso-building polygon { stroke: rgba(15,31,22,.8); stroke-width: .22; stroke-linejoin: round; }
 .iso-building text { fill: #14241a; font: 800 1.5px var(--font-mono); paint-order: stroke; stroke: rgba(255,255,255,.5); stroke-width: .25px; pointer-events: none; }
