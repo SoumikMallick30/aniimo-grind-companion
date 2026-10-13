@@ -66,6 +66,27 @@ export function layOut(pieces, options = {}) {
             x2: Math.max(...cells.map(c => c.x + c.w)), y2: Math.max(...cells.map(c => c.y + c.h)),
         }
         : { x: -reach, y: -reach, x2: reach, y2: reach };
+    // A legible estate has neighbourhoods, not a bag of buildings. These anchors make each
+    // functional district gravitate to a stable part of the available land while the original
+    // hauling cost still keeps busy facilities practical. They are presentation constraints,
+    // not invented production rules.
+    const districtAnchors = {
+        woodland: [.22, .24],
+        mining: [.76, .22],
+        crops: [.22, .72],
+        production: [.76, .68],
+        utilities: [.50, .42],
+        artisan: [.52, .82],
+    };
+    const districtTarget = piece => {
+        const [px, py] = districtAnchors[piece.district] || districtAnchors.utilities;
+        return { x: extent.x + (extent.x2 - extent.x) * px, y: extent.y + (extent.y2 - extent.y) * py };
+    };
+    const districtCost = (piece, x, y, shape, area) => {
+        const target = districtTarget(piece);
+        const cx = shape.cx + x, cy = shape.cy + y;
+        return Math.hypot(cx - target.x, cy - target.y) * Math.max(1, Math.sqrt(area)) * .42;
+    };
     const offsets = latticeByDistance(extent, STEP);
     // Environment buildings stand on whole tiles, which is plenty for them and far fewer to try.
     const clusterOffsets = latticeByDistance(extent, 1);
@@ -124,6 +145,7 @@ export function layOut(pieces, options = {}) {
                 if (touchy.some(r => inOtherSquare(r, i))) continue;
                 if (firstFit === null) firstFit = distance;
                 const cost = shape.members.reduce((sum, m) => sum + m.weight * centerDistance(m, x, y), 0)
+                    + districtCost(pieces[i], x, y, shape, areaOf(pieces[i]))
                     // Pieces nobody visits still go as close as they can, to keep the homeland tight.
                     + EPSILON * Math.hypot(shape.cx + x, shape.cy + y);
                 if (!best || cost < best.cost - EPSILON) best = { cost, x, y, shape, rects, sensitive: touchy };
@@ -145,7 +167,8 @@ export function layOut(pieces, options = {}) {
             const outside = shape.pair ? [[1], [], [0]][zone] : [];
             return inside.every(k => overlaps(r, own[k])) && outside.every(k => !overlaps(r, own[k])) && !inOtherSquare(r, i);
         };
-        const costOf = rects => shape.plots.reduce((sum, p, j) => sum + p.weight * Math.hypot(rects[j].x + p.w / 2, rects[j].y + p.h / 2), 0);
+        const costOf = rects => shape.plots.reduce((sum, p, j) => sum + p.weight * Math.hypot(rects[j].x + p.w / 2, rects[j].y + p.h / 2), 0)
+            + districtCost(pieces[i], x, y, shape, areaOf(pieces[i]));
         let plots = null;
         const slots = shape.plots.map((p, j) => ({ x: shape.planned[j].x + x, y: shape.planned[j].y + y, w: p.w, h: p.h }));
         if (slots.every(r => free(r, i) && !buildings.some(b => overlaps(r, b)))) {
@@ -301,13 +324,21 @@ export function layOutHomelandMulti(pieces, cells, requested = 1, storage = { w:
         const source = piece.cluster ? [...piece.buildings, ...piece.plots] : piece.members;
         return source.reduce((sum, member) => sum + member.w * member.h, 0);
     };
+    const districtOrder = ['woodland', 'crops', 'utilities', 'artisan', 'production', 'mining'];
+    const districtsAt = Array.from({ length: count }, () => new Set());
     pieces.map((piece, index) => ({ piece, index, area: areaOf(piece) }))
-        .sort((a, b) => b.area - a.area)
+        .sort((a, b) => districtOrder.indexOf(a.piece.district) - districtOrder.indexOf(b.piece.district) || b.area - a.area)
         .forEach(entry => {
-            let zone = 0;
-            for (let i = 1; i < count; i++) if (loads[i] / capacities[i] < loads[zone] / capacities[zone]) zone = i;
+            const fits = i => loads[i] + entry.area <= capacities[i] * .88;
+            const same = [...Array(count).keys()].filter(i => fits(i) && districtsAt[i].has(entry.piece.district));
+            const empty = [...Array(count).keys()].filter(i => fits(i) && districtsAt[i].size === 0);
+            const pool = same.length ? same : empty.length ? empty : [...Array(count).keys()];
+            let zone = pool[0];
+            const score = i => loads[i] / capacities[i] + (districtsAt[i].has(entry.piece.district) ? -.35 : districtsAt[i].size * .2);
+            for (const i of pool.slice(1)) if (score(i) < score(zone)) zone = i;
             assignments[zone].push(entry);
             loads[zone] += entry.area;
+            districtsAt[zone].add(entry.piece.district);
         });
     const combined = new Array(pieces.length);
     const unplaced = [];

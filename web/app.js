@@ -1215,7 +1215,30 @@ function homelandPieces(plan, input) {
         const building = f.name in ENVIRONMENT_BUILDING_SIZES;
         for (let i = 0; i < extra; i++) pieces.push({ members: [{ x: 0, y: 0, w: footprint[0], h: footprint[1], weight: 0, facility: f.name, crop: null, building, mode: null }] });
     });
-    return { pieces, unplaced: [...unplaced] };
+    // Give the geometric placer a real master-plan brief. This does not change any game
+    // mechanic: it only keeps facilities that serve the same purpose in recognisable districts.
+    // Environment clusters inherit the district of the plots they actually support.
+    const districtForFacility = facility => {
+        if (facility === 'Farmland' || facility === 'Well') return 'crops';
+        if (facility === 'Woodland') return 'woodland';
+        if (facility === 'Mine') return 'mining';
+        if (facility in ENVIRONMENT_BUILDING_SIZES) return 'utilities';
+        const category = FACILITY_CATEGORY_BY_NAME.get(facility);
+        if (category === 'Materials Processing') return 'production';
+        if (category === 'Aniimo Materials') return 'artisan';
+        return 'utilities';
+    };
+    const plannedPieces = pieces.map(piece => {
+        const source = piece.cluster ? piece.plots : piece.members;
+        const areas = new Map();
+        source.forEach(member => {
+            const district = districtForFacility(member.facility);
+            areas.set(district, (areas.get(district) || 0) + member.w * member.h);
+        });
+        const district = [...areas].sort((a, b) => b[1] - a[1])[0]?.[0] || 'utilities';
+        return { ...piece, district };
+    });
+    return { pieces: plannedPieces, unplaced: [...unplaced] };
 }
 
 // Colors for the layout: crops and Aniimo materials as in the environment maps, the rest by
@@ -1230,6 +1253,10 @@ const layoutColor = m => m.building
     ? (ENVIRONMENT_MODE_COLORS[m.mode] || '#9aa0a8')
     : ENVIRONMENT_FACILITY_COLORS[m.facility] || LAYOUT_CATEGORY_COLORS[FACILITY_CATEGORY_BY_NAME.get(m.facility)] || '#888888';
 const initialsOf = name => name.split(/[\s-]+/).map(w => w[0]).join('').toUpperCase();
+const LAYOUT_DISTRICT_NAMES = {
+    crops: 'CROPS & WATER', woodland: 'WOODLAND', mining: 'MINING',
+    production: 'PRODUCTION', utilities: 'UTILITIES', artisan: 'ANIIMO MATERIALS',
+};
 
 let layoutRunId = 0;
 let layoutWorker = null;
@@ -1341,7 +1368,7 @@ function renderHomelandLayout(plan) {
             unplaced.length ? `Not placed, size unknown: ${unplaced.join(', ')}.` : '',
         ].filter(Boolean).join(' ');
         document.getElementById('layout-summary').textContent = `${trips > 0
-            ? `${actualStorageCount} Storage Unit${actualStorageCount === 1 ? '' : 's'} · ${openPlotCount} open plot${openPlotCount === 1 ? '' : 's'} · busy buildings kept close to storage.${decorationPlot ? ` Plot ${decorationPlot} stays free for decoration.` : ''}`
+            ? `${actualStorageCount} Storage Unit${actualStorageCount === 1 ? '' : 's'} · ${openPlotCount} open plot${openPlotCount === 1 ? '' : 's'} · master-planned districts with busy buildings kept close to storage.${decorationPlot ? ` Plot ${decorationPlot} stays free for decoration.` : ''}`
             : `Nothing in this plan is carried to the ${actualStorageCount} Storage Unit${actualStorageCount === 1 ? '' : 's'}.`}${notes ? ` ${notes}` : ''}`;
         lastLayout = { layout, homeLevel, openPlots: [...openPlots], decorationPlot };
         drawLayout(lastLayout);
@@ -1374,7 +1401,7 @@ function homelandIsometricSvg(layout, openPlotNumbers, decorationPlot = null) {
     const open = new Set(openPlotNumbers);
     const plots = homelandPlots().filter(plot => open.has(plot.number));
     const storages = (layout.storages || [layout.storage]).map((item, i) => ({ ...item, facility: `Storage ${i + 1}`, storage: true }));
-    const objects = [...layout.pieces.flatMap(piece => piece.members), ...storages]
+    const objects = [...layout.pieces.flatMap(piece => piece.members.map(member => ({ ...member, district: piece.district }))), ...storages]
         .sort((a, b) => layoutCamera === 'entrance' ? (a.y + a.h) - (b.y + b.h) : (a.x + a.y + a.h) - (b.x + b.y + b.h));
     const project = layoutCamera === 'entrance'
         ? (x, y, z = 0) => [(x - 40) * 1.15, y * .52 - z * 1.35]
@@ -1385,16 +1412,22 @@ function homelandIsometricSvg(layout, openPlotNumbers, decorationPlot = null) {
     const minX = Math.min(...allCorners.map(p => p[0])) - 8, maxX = Math.max(...allCorners.map(p => p[0])) + 8;
     const minY = Math.min(...allCorners.map(p => p[1])) - 24, maxY = Math.max(...allCorners.map(p => p[1])) + 16;
     const entrancePlot = plots.find(plot => plot.number === 1) || [...plots].sort((a, b) => b.y - a.y || Math.abs((a.x + a.w / 2) - 50) - Math.abs((b.x + b.w / 2) - 50))[0];
-    const plotUse = new Map(plots.map(plot => [plot.number, 0]));
+    const plotUse = new Map(plots.map(plot => [plot.number, { count: 0, districts: new Map() }]));
     objects.forEach(item => {
         const cx = item.x + item.w / 2, cy = item.y + item.h / 2;
         const plot = plots.find(p => cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
-        if (plot) plotUse.set(plot.number, plotUse.get(plot.number) + 1);
+        if (plot) {
+            const use = plotUse.get(plot.number);
+            use.count++;
+            if (item.district) use.districts.set(item.district, (use.districts.get(item.district) || 0) + item.w * item.h);
+        }
     });
     const plotShapes = plots.map(plot => {
         const decor = plot.number === decorationPlot;
         const [lx, ly] = project(plot.x + plot.w / 2, plot.y + plot.h / 2);
-        const label = decor ? `DECORATION GARDEN · P${plot.number}` : `PLOT ${plot.number} · ${plotUse.get(plot.number)} PLACED`;
+        const use = plotUse.get(plot.number);
+        const district = [...use.districts].sort((a, b) => b[1] - a[1])[0]?.[0];
+        const label = decor ? `DECORATION GARDEN · P${plot.number}` : `PLOT ${plot.number} · ${LAYOUT_DISTRICT_NAMES[district] || 'LOGISTICS'} · ${use.count} PLACED`;
         const accentPoints = decor ? [[.18,.18],[.82,.18],[.18,.82],[.82,.82],[.28,.68],[.72,.68]] : [[.08,.1],[.92,.9]];
         const accents = accentPoints.map(([dx,dy]) => {
             const [x,y] = project(plot.x + plot.w * dx, plot.y + plot.h * dy, 1.4);

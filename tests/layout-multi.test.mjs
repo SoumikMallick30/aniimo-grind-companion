@@ -27,3 +27,15 @@ test('storage count is capped by open plot count', () => {
     const layout = layOutHomelandMulti(pieces.slice(0, 2), cells.slice(0, 1), 9);
     assert.equal(layout.storages.length, 1);
 });
+
+test('master plan keeps equal-purpose facilities in the same district zone', () => {
+    const zoned = [
+        ...Array.from({ length: 3 }, (_, i) => ({ district: 'crops', members: [{ facility: `Field ${i}`, x: 0, y: 0, w: 2, h: 2, weight: 1 }] })),
+        ...Array.from({ length: 3 }, (_, i) => ({ district: 'production', members: [{ facility: `Factory ${i}`, x: 0, y: 0, w: 2, h: 2, weight: 1 }] })),
+    ];
+    const layout = layOutHomelandMulti(zoned, cells, 2);
+    const side = piece => piece.members[0].x < 16 ? 'left' : 'right';
+    assert.equal(new Set(layout.pieces.slice(0, 3).map(side)).size, 1);
+    assert.equal(new Set(layout.pieces.slice(3).map(side)).size, 1);
+    assert.notEqual(side(layout.pieces[0]), side(layout.pieces[3]));
+});
