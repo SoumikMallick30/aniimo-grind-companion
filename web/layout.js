@@ -324,21 +324,32 @@ export function layOutHomelandMulti(pieces, cells, requested = 1, storage = { w:
         const source = piece.cluster ? [...piece.buildings, ...piece.plots] : piece.members;
         return source.reduce((sum, member) => sum + member.w * member.h, 0);
     };
-    const districtOrder = ['woodland', 'crops', 'utilities', 'artisan', 'production', 'mining'];
-    const districtsAt = Array.from({ length: count }, () => new Set());
-    pieces.map((piece, index) => ({ piece, index, area: areaOf(piece) }))
-        .sort((a, b) => districtOrder.indexOf(a.piece.district) - districtOrder.indexOf(b.piece.district) || b.area - a.area)
-        .forEach(entry => {
-            const fits = i => loads[i] + entry.area <= capacities[i] * .88;
-            const same = [...Array(count).keys()].filter(i => fits(i) && districtsAt[i].has(entry.piece.district));
-            const empty = [...Array(count).keys()].filter(i => fits(i) && districtsAt[i].size === 0);
-            const pool = same.length ? same : empty.length ? empty : [...Array(count).keys()];
-            let zone = pool[0];
-            const score = i => loads[i] / capacities[i] + (districtsAt[i].has(entry.piece.district) ? -.35 : districtsAt[i].size * .2);
-            for (const i of pool.slice(1)) if (score(i) < score(zone)) zone = i;
-            assignments[zone].push(entry);
-            loads[zone] += entry.area;
-            districtsAt[zone].add(entry.piece.district);
+    const districtGroups = new Map();
+    pieces.forEach((piece, index) => {
+        const district = piece.district || 'utilities';
+        if (!districtGroups.has(district)) districtGroups.set(district, []);
+        districtGroups.get(district).push({ piece, index, area: areaOf(piece) });
+    });
+    // Allocate a whole district at a time. Largest districts choose first, so every unlocked
+    // zone receives a useful share of the estate without scattering matching facilities.
+    [...districtGroups.values()]
+        .map(entries => ({ entries: entries.sort((a, b) => b.area - a.area), area: entries.reduce((sum, entry) => sum + entry.area, 0) }))
+        .sort((a, b) => b.area - a.area)
+        .forEach(group => {
+            let zone = 0;
+            const score = i => loads[i] / capacities[i] + assignments[i].length * .002;
+            for (let i = 1; i < count; i++) if (score(i) < score(zone)) zone = i;
+            // Exception for a district larger than its chosen zone: keep as much of it together
+            // as possible, then continue into the least-filled adjoining storage zone.
+            group.entries.forEach(entry => {
+                if (loads[zone] + entry.area > capacities[zone] * .9) {
+                    let next = 0;
+                    for (let i = 1; i < count; i++) if (score(i) < score(next)) next = i;
+                    zone = next;
+                }
+                assignments[zone].push(entry);
+                loads[zone] += entry.area;
+            });
         });
     const combined = new Array(pieces.length);
     const unplaced = [];
