@@ -340,20 +340,41 @@ export function layOutHomelandMulti(pieces, cells, requested = 1, storage = { w:
             loads[zone] += entry.area;
             districtsAt[zone].add(entry.piece.district);
         });
-    const combined = new Array(pieces.length);
-    const unplaced = [];
-    const storages = [];
-    const storageAts = [];
-    let tried = 0;
-    assignments.forEach((entries, zone) => {
-        const out = layOutHomeland(entries.map(entry => entry.piece), zones[zone], storage);
-        tried += out.tried;
-        storages.push(out.storage);
-        storageAts.push(out.storageAt);
-        out.pieces.forEach((piece, localIndex) => { combined[entries[localIndex].index] = piece; });
-        out.unplaced.forEach(localIndex => unplaced.push(entries[localIndex].index));
-    });
-    return { storage: storages[0], storageAt: storageAts[0], storages, storageAts, pieces: combined, unplaced, tried };
+    const runAssignments = plan => {
+        const combined = new Array(pieces.length);
+        const unplaced = [];
+        const storages = [];
+        const storageAts = [];
+        let tried = 0;
+        plan.forEach((entries, zone) => {
+            const out = layOutHomeland(entries.map(entry => entry.piece), zones[zone], storage);
+            tried += out.tried;
+            storages.push(out.storage);
+            storageAts.push(out.storageAt);
+            out.pieces.forEach((piece, localIndex) => { combined[entries[localIndex].index] = piece; });
+            out.unplaced.forEach(localIndex => unplaced.push(entries[localIndex].index));
+        });
+        return { storage: storages[0], storageAt: storageAts[0], storages, storageAts, pieces: combined, unplaced, tried };
+    };
+    const districtLayout = runAssignments(assignments);
+    if (districtLayout.unplaced.length === 0) return districtLayout;
+
+    // Aesthetic zoning must never silently remove something the player owns. If a district is
+    // geometrically awkward (large environment blocks are the usual case), retry with the
+    // original capacity-balanced distribution and keep whichever plan places more facilities.
+    const balanced = Array.from({ length: count }, () => []);
+    const balancedLoads = Array(count).fill(0);
+    pieces.map((piece, index) => ({ piece, index, area: areaOf(piece) }))
+        .sort((a, b) => b.area - a.area)
+        .forEach(entry => {
+            let zone = 0;
+            for (let i = 1; i < count; i++) if (balancedLoads[i] / capacities[i] < balancedLoads[zone] / capacities[zone]) zone = i;
+            balanced[zone].push(entry);
+            balancedLoads[zone] += entry.area;
+        });
+    const fallback = runAssignments(balanced);
+    fallback.tried += districtLayout.tried;
+    return fallback.unplaced.length < districtLayout.unplaced.length ? fallback : districtLayout;
 }
 
 // Puts `plots` on `slots` (the plan's own arrangement, one slot per plot, each slot sized for the
