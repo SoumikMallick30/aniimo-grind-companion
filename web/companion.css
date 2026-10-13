@@ -107,7 +107,9 @@ header h1 { font-family: var(--font-body); font-weight: 750; letter-spacing: -.0
 .view-switch label { position: relative; padding: 8px 13px; border-radius: 999px; cursor: pointer; font-size: .72rem; font-weight: 700; }
 .view-switch input { position: absolute; opacity: 0; }
 .view-switch label:has(input:checked) { color: #15271e; background: var(--acid); }
+.layout-controls:has(#layout-view-grid:checked) .camera-switch { display: none; }
 .layout-iso { width: 100%; min-width: 820px; min-height: 620px; overflow: visible; }
+.layout-iso.entrance { min-height: 680px; }
 .iso-plot > polygon:first-child { fill: #2e6745; stroke: #83c89b; stroke-width: .35; }
 .iso-plot:nth-child(even) > polygon:first-child { fill: #356f4d; }
 .iso-plot.decor > polygon:first-child { fill: #466833; stroke: #d9ff67; }

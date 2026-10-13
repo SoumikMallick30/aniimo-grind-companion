@@ -1234,6 +1234,7 @@ const initialsOf = name => name.split(/[\s-]+/).map(w => w[0]).join('').toUpperC
 let layoutRunId = 0;
 let layoutWorker = null;
 let layoutView = '3d';
+let layoutCamera = 'overhead';
 
 // Every plot of the homeland, `{ number, x, y, w, h }` in tiles, with the top left at the origin.
 function homelandPlots() {
@@ -1275,6 +1276,11 @@ function attachLayoutHandlers() {
     document.querySelectorAll('input[name="layout-view"]').forEach(input => input.addEventListener('change', event => {
         if (!event.target.checked) return;
         layoutView = event.target.value;
+        if (lastLayout) drawLayout(lastLayout);
+    }));
+    document.querySelectorAll('input[name="layout-camera"]').forEach(input => input.addEventListener('change', event => {
+        if (!event.target.checked) return;
+        layoutCamera = event.target.value;
         if (lastLayout) drawLayout(lastLayout);
     }));
 }
@@ -1368,45 +1374,27 @@ function homelandIsometricSvg(layout, openPlotNumbers, decorationPlot = null) {
     const open = new Set(openPlotNumbers);
     const plots = homelandPlots().filter(plot => open.has(plot.number));
     const storages = (layout.storages || [layout.storage]).map((item, i) => ({ ...item, facility: `Storage ${i + 1}`, storage: true }));
-    const sourceObjects = [...storages, ...layout.pieces.flatMap(piece => piece.members)];
-    const workingPlots = plots.filter(plot => plot.number !== decorationPlot);
-    const buckets = new Map(workingPlots.map(plot => [plot.number, []]));
-    const category = item => item.storage ? 'Utilities' : ['Farmland', 'Woodland', 'Mine'].includes(item.facility) ? item.facility : item.building ? 'Environment' : 'Production';
-    const ordered = [...sourceObjects].sort((a, b) => category(a).localeCompare(category(b)) || (b.w * b.h) - (a.w * a.h));
-    ordered.forEach((item, i) => buckets.get(workingPlots[i % workingPlots.length].number).push(item));
-    const objects = workingPlots.flatMap(plot => {
-        const items = buckets.get(plot.number);
-        const rows = Math.max(1, Math.ceil(items.length / 2));
-        const laneH = (plot.h - 2) / rows;
-        return items.map((item, i) => {
-            const side = i % 2, row = Math.floor(i / 2);
-            const maxW = plot.w * .34, maxH = laneH * .7;
-            const scale = Math.min(1, maxW / item.w, maxH / item.h);
-            const w = item.w * scale, h = item.h * scale;
-            const x = plot.x + (side ? plot.w * .58 : plot.w * .08) + (maxW - w) / 2;
-            const y = plot.y + 1 + row * laneH + (laneH - h) / 2;
-            return { ...item, x, y, w, h, cleanCategory: category(item), cleanPlot: plot.number };
-        });
-    }).sort((a, b) => (a.x + a.y + a.h) - (b.x + b.y + b.h));
-    const project = (x, y, z = 0) => [(x - y) * 1.05, (x + y) * .52 - z];
+    const objects = [...layout.pieces.flatMap(piece => piece.members), ...storages]
+        .sort((a, b) => layoutCamera === 'entrance' ? (a.y + a.h) - (b.y + b.h) : (a.x + a.y + a.h) - (b.x + b.y + b.h));
+    const project = layoutCamera === 'entrance'
+        ? (x, y, z = 0) => [(x - 40) * 1.15, y * .52 - z * 1.35]
+        : (x, y, z = 0) => [(x - y) * 1.05, (x + y) * .52 - z];
     const points = list => list.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
     const diamond = (rect, z = 0) => points([project(rect.x, rect.y, z), project(rect.x + rect.w, rect.y, z), project(rect.x + rect.w, rect.y + rect.h, z), project(rect.x, rect.y + rect.h, z)]);
     const allCorners = homelandPlots().flatMap(p => [project(p.x, p.y), project(p.x + p.w, p.y), project(p.x + p.w, p.y + p.h), project(p.x, p.y + p.h)]);
     const minX = Math.min(...allCorners.map(p => p[0])) - 8, maxX = Math.max(...allCorners.map(p => p[0])) + 8;
     const minY = Math.min(...allCorners.map(p => p[1])) - 24, maxY = Math.max(...allCorners.map(p => p[1])) + 16;
     const entrancePlot = plots.find(plot => plot.number === 1) || [...plots].sort((a, b) => b.y - a.y || Math.abs((a.x + a.w / 2) - 50) - Math.abs((b.x + b.w / 2) - 50))[0];
-    const plotUse = new Map(plots.map(plot => [plot.number, []]));
+    const plotUse = new Map(plots.map(plot => [plot.number, 0]));
     objects.forEach(item => {
         const cx = item.x + item.w / 2, cy = item.y + item.h / 2;
         const plot = plots.find(p => cx >= p.x && cx <= p.x + p.w && cy >= p.y && cy <= p.y + p.h);
-        if (plot) plotUse.get(plot.number).push(item.cleanCategory);
+        if (plot) plotUse.set(plot.number, plotUse.get(plot.number) + 1);
     });
     const plotShapes = plots.map(plot => {
         const decor = plot.number === decorationPlot;
         const [lx, ly] = project(plot.x + plot.w / 2, plot.y + plot.h / 2);
-        const uses = plotUse.get(plot.number);
-        const dominant = uses.length ? [...new Set(uses)].join(' + ') : 'Decoration';
-        const label = decor ? `DECORATION GARDEN · P${plot.number}` : `${dominant.toUpperCase()} · P${plot.number}`;
+        const label = decor ? `DECORATION GARDEN · P${plot.number}` : `PLOT ${plot.number} · ${plotUse.get(plot.number)} PLACED`;
         const accentPoints = decor ? [[.18,.18],[.82,.18],[.18,.82],[.82,.82],[.28,.68],[.72,.68]] : [[.08,.1],[.92,.9]];
         const accents = accentPoints.map(([dx,dy]) => {
             const [x,y] = project(plot.x + plot.w * dx, plot.y + plot.h * dy, 1.4);
@@ -1430,8 +1418,10 @@ function homelandIsometricSvg(layout, openPlotNumbers, decorationPlot = null) {
             <polygon points="${points([b,c,ct,bt])}" fill="${color}" opacity=".52"/><polygon points="${points([d,c,ct,dt])}" fill="${color}" opacity=".35"/>
             <polygon points="${diamond(item, height)}" fill="${color}"/><text x="${tx}" y="${ty}" text-anchor="middle">${label}</text></g>`;
     }).join('');
-    return `<svg class="layout-iso" viewBox="${minX} ${minY} ${maxX-minX} ${maxY-minY}" role="img" aria-label="Isometric 3D Homeland layout">
-        <defs><filter id="iso-shadow"><feDropShadow dx="0" dy="1.6" stdDeviation="1.5" flood-opacity=".28"/></filter></defs>
+    return `<svg class="layout-iso ${layoutCamera}" viewBox="${minX} ${minY} ${maxX-minX} ${maxY-minY}" role="img" aria-label="${layoutCamera} 3D view of the exact Build grid layout">
+        <defs><linearGradient id="iso-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8bc9e8"/><stop offset=".46" stop-color="#cbe7d7"/><stop offset="1" stop-color="#163525"/></linearGradient>
+        <filter id="iso-shadow"><feDropShadow dx="0" dy="1.6" stdDeviation="1.5" flood-opacity=".28"/></filter></defs>
+        <rect x="${minX}" y="${minY}" width="${maxX-minX}" height="${maxY-minY}" fill="url(#iso-sky)"/>
         <g class="iso-ground">${plotShapes}</g><g filter="url(#iso-shadow)">${objectShapes}</g></svg>`;
 }
 
